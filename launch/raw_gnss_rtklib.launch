@@ -2,7 +2,7 @@
     <!-- Path of dataset -->
     <param name="roverMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/COM3_190428_124409.obs" />
     <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19o" />
-    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19n" />
+    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19b" />
     <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19n" />
     <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/results.pos" />
 
