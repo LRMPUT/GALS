@@ -1,10 +1,10 @@
 <launch>
     <!-- Path of dataset -->
-    <param name="roverMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/COM3_190428_124409.obs" />
-    <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/hksc1180.19o" />
-    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/hksc1180.19n" />
-    <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/hksc1180.19n" />
-    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)/dataset/results.pos" />
+    <param name="roverMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/COM3_190428_124409.obs" />
+    <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19o" />
+    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19n" />
+    <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19n" />
+    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/results.pos" />
 
     <!-- GNSS positioning mode, 0: single, 1:DGPS/DGNSS, 2: kinematic -->
     <param name="mode" type="int" value="0" />

@@ -1,7 +1,0 @@
-Ublox M8T file:
-COM55_200314_084357.ubx ： GNSS measurements collected 
-
-RINEX Files:
-hksc0740.20o: GNSS measurements from observation 
-hksc0740.20n: Ephemeris data of GPS
-hksc0740.20b: Ephemeris data of BeiDou
