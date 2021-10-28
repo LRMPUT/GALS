@@ -7,7 +7,7 @@
 By default RTKLIB output file is written to **./raw_gnss_rtklib/dataset/gps_solution_TST/results.pos**
 
 # Evaluation
-[evaluation](https://bitbucket.org/raw-gnss/raw_gnss_rtklib/src/master/evaluation/)
+* [Evaluation](https://bitbucket.org/raw-gnss/raw_gnss_rtklib/src/master/evaluation/)
 # References
 * [RTKLIB](https://github.com/tomojitakasu/RTKLIB/tree/rtklib_2.4.3)
 * [GraphGNSSLib](https://github.com/weisongwen/GraphGNSSLib)
