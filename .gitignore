@@ -49,3 +49,7 @@ Thumbs.db
 *.wmv
 
 .vscode
+/evaluation/cache
+/evaluation/env
+/evaluation/.*
+
