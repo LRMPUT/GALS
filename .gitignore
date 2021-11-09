@@ -52,4 +52,4 @@ Thumbs.db
 /evaluation/cache
 /evaluation/env
 /evaluation/.*
-
+/evaluation/results/*

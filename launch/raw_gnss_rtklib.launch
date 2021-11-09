@@ -1,17 +1,19 @@
 <launch>
     <!-- Path of dataset -->
-    <param name="roverMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/COM3_190428_124409.obs" />
-    <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19o" />
-    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19b" />
-    <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/hksc1180.19n" />
-    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)/dataset/gps_solution_TST/results.pos" />
+    <param name="roverMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/rover_trimble.obs" />
+    <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base_trimble.obs" />
+    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/ba1se.nav" />
+    <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base.nav" />
+    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/results.pos" />
 
-    <!-- GNSS positioning mode, 0: single, 1:DGPS/DGNSS, 2: kinematic -->
-    <param name="mode" type="int" value="0" />
-    <!-- number of frequency (1:L1,2:L1+L2,3:L1+L2+L5) -->
-    <param name="nf" type="int" value="2" />
-    <param name="soltype" type="int" value="0" />
 
-    <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen" />
+
+    <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen">
+            <!-- GNSS positioning mode, 0: single, 1:DGPS/DGNSS, 2: kinematic -->
+        <param name="mode" type="int" value="2" />
+        <!-- number of frequency (1:L1,2:L1+L2,3:L1+L2+L5) -->
+        <param name="nf" type="int" value="2" />
+        <param name="soltype" type="int" value="0" />
+    </node>
 
 </launch>
