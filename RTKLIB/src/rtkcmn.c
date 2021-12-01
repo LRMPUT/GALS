@@ -3534,7 +3534,7 @@ extern double geodist(const double *rs, const double *rr, double *e)
     for (i=0;i<3;i++) e[i]=rs[i]-rr[i];
     r=norm(e,3);
     for (i=0;i<3;i++) e[i]/=r;
-    return r ;//+OMGE*(rs[0]*rr[1]-rs[1]*rr[0])/CLIGHT;
+    return r + OMGE*(rs[0]*rr[1]-rs[1]*rr[0])/CLIGHT;
 }
 /* satellite azimuth/elevation angle -------------------------------------------
 * compute satellite azimuth/elevation angle

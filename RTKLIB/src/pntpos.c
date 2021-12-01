@@ -325,7 +325,10 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         /* variance of pseudorange error */
         var[nv++]=varerr(opt,azel[1+i*2],sys)+vare[i]+vmeas+vion+vtrp;
         if (iter == 6)
-            trace(2, "PRNG: %2d %13.3f %13.3f\n", obs[i].sat, tmp, var[nv-1]);
+        {
+            trace(2, "PRNG: %2d %13.3f %13.3f %13.3f %13.3f\n", obs[i].sat, tmp, var[nv-1], dts[i*2]*1e9, -CLIGHT*dts[i*2]);
+            showmsg("nv: %3d, P:%13.3f, r: %13.3f, dtr: %8f, dts[ns]: %13.3f dts[m]: %8f, dion: %8f, dtrp: %8f", nv, P, r, dtr, dts[i*2]*1e9, -CLIGHT*dts[i*2], dion, dtrp);
+        }
         // trace(2,"sat=%2d azel=%5.1f %4.1f res=%7.3f sig=%5.3f\n",obs[i].sat,
         //       azel[i*2]*R2D,azel[1+i*2]*R2D,resp[i],sqrt(var[nv-1]));
     }
@@ -384,8 +387,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     for (i=0;i<3;i++) x[i]=sol->rr[i];
     // showmsg("Init x:  %13f %13f %13f", sol->rr[0], sol->rr[1], sol->rr[2]);
     static int cnt = 0;
-    // if (cnt++ == 2)
-    // exit(0);
+    if (cnt++ == 2)
+    exit(0);
     for (i=0;i<MAXITR;i++) {
         
         /* pseudorange residuals (m) */
