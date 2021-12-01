@@ -276,33 +276,36 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         
         /* geometric distance */
         if ((r=geodist(rs+i*6,rr,e))<=0.0) continue;
-        
+        // trace(2, "R: %13.3f\n", r);
         if (iter>0) {
             /* test elevation mask */
-            if (satazel(pos,e,azel+i*2)<opt->elmin) continue;
+            if (satazel(pos,e,azel+i*2)<opt->elmin){             /* trace(2, "Rej 1 Sat:  %2d\n", obs[i].sat); */ continue;}
             
             /* test SNR mask */
-            if (!snrmask(obs+i,azel+i*2,opt)) continue;
+            if (!snrmask(obs+i,azel+i*2,opt)){              trace(2, "Rej 2 Sat:  %2d\n", obs[i].sat); continue;}
             
             /* ionospheric correction */
-            if (!ionocorr(time,nav,sat,pos,azel+i*2,opt->ionoopt,&dion,&vion)) {
-                continue;
-            }
-            if ((freq=sat2freq(sat,obs[i].code[0],nav))==0.0) continue;
+            if (!ionocorr(time,nav,sat,pos,azel+i*2,opt->ionoopt,&dion,&vion)) {              trace(2, "Rej 3 Sat:  %2d\n", obs[i].sat); continue;}
+            if ((freq=sat2freq(sat,obs[i].code[0],nav))==0.0) {              trace(2, "Rej 4 Sat:  %2d\n", obs[i].sat); continue;}
             dion*=SQR(FREQ1/freq);
             vion*=SQR(FREQ1/freq);
             
             /* tropospheric correction */
             if (!tropcorr(time,nav,pos,azel+i*2,opt->tropopt,&dtrp,&vtrp)) {
-                continue;
+                {              trace(2, "Rej 5 Sat:  %2d\n", obs[i].sat); continue;}
             }
         }
         /* psendorange with code bias correction */
-        if ((P=prange(obs+i,nav,opt,&vmeas))==0.0) continue;
+        if ((P=prange(obs+i,nav,opt,&vmeas))==0.0) {              trace(2, "Rej 6 Sat:  %2d\n", obs[i].sat); continue;}
         
+        // trace(2, "Prange: %13.3f\n", P);
         /* pseudorange residual */
         v[nv]=P-(r+dtr-CLIGHT*dts[i*2]+dion+dtrp);
-        
+        // showmsg("nv: %3d, P:%13.3f, r: %13.3f, dtr: %8f, dts: %8f, dion: %8f, dtrp: %8f", nv, P, r, dtr, -CLIGHT*dts[i*2], dion, dtrp);
+        double tmp = P -(dtr-CLIGHT*dts[i*2]+dion+dtrp);
+
+        // else
+        //     trace(2,"Iter: %2d\n", iter);
         /* design matrix */
         for (j=0;j<NX;j++) {
             H[j+nv*NX]=j<3?-e[j]:(j==3?1.0:0.0);
@@ -321,9 +324,10 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         
         /* variance of pseudorange error */
         var[nv++]=varerr(opt,azel[1+i*2],sys)+vare[i]+vmeas+vion+vtrp;
-        
-        trace(4,"sat=%2d azel=%5.1f %4.1f res=%7.3f sig=%5.3f\n",obs[i].sat,
-              azel[i*2]*R2D,azel[1+i*2]*R2D,resp[i],sqrt(var[nv-1]));
+        if (iter == 6)
+            trace(2, "PRNG: %2d %13.3f %13.3f\n", obs[i].sat, tmp, var[nv-1]);
+        // trace(2,"sat=%2d azel=%5.1f %4.1f res=%7.3f sig=%5.3f\n",obs[i].sat,
+        //       azel[i*2]*R2D,azel[1+i*2]*R2D,resp[i],sqrt(var[nv-1]));
     }
     /* constraint to avoid rank-deficient */
     for (i=0;i<NX-3;i++) {
@@ -378,7 +382,10 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
     
     for (i=0;i<3;i++) x[i]=sol->rr[i];
-    
+    // showmsg("Init x:  %13f %13f %13f", sol->rr[0], sol->rr[1], sol->rr[2]);
+    static int cnt = 0;
+    // if (cnt++ == 2)
+    // exit(0);
     for (i=0;i<MAXITR;i++) {
         
         /* pseudorange residuals (m) */
@@ -635,7 +642,7 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     
     /* estimate receiver position with pseudorange */
     stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
-    
+
     /* RAIM FDE */
     if (!stat&&n>=6&&opt->posopt[4]) {
         stat=raim_fde(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
@@ -663,6 +670,8 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
             ssat[obs[i].sat-1].resp[0]=resp[i];
         }
     }
+    trace(2,"estpos %13.3f %13.3f %13.3f \n", rs[0],rs[1],rs[2]);
+    trace(2,"estpos %13.3f %13.3f %13.3f \n", sol->rr[0],sol->rr[1],sol->rr[2]);
     free(rs); free(dts); free(var); free(azel_); free(resp);
     return stat;
 }

@@ -51,7 +51,7 @@
 *           2014/10/24 1.9  fix bug on return of var_uraeph() if ura<0||15<ura
 *           2014/12/07 1.10 modify MAXDTOE for qzss,gal and bds
 *                           test max number of iteration for Kepler
-*           2015/08/26 1.11 update RTOL_ELPLER 1E-14 -> 1E-13
+*           2015/08/26 1.11 updatBERe RTOL_ELPLER 1E-14 -> 1E-13
 *                           set MAX_ITER_KEPLER for alm2pos()
 *           2017/04/11 1.12 fix bug on max number of obs data in satposs()
 *           2018/10/10 1.13 update reference [7]
@@ -801,11 +801,13 @@ extern void satposs(gtime_t teph, const obsd_t *obs, int n, const nav_t *nav,
             *var=SQR(STD_BRDCCLK);
         }
     }
+    trace(2,"%s", "#SATPOSITION_START\n");
     for (i=0;i<n&&i<2*MAXOBS;i++) {
-        trace(4,"%s sat=%2d rs=%13.3f %13.3f %13.3f dts=%12.3f var=%7.3f svh=%02X\n",
+        trace(2,"%s %2d %13.3f %13.3f %13.3f dts=%12.3f var=%7.3f svh=%02X\n",
               time_str(time[i],6),obs[i].sat,rs[i*6],rs[1+i*6],rs[2+i*6],
               dts[i*2]*1E9,var[i],svh[i]);
     }
+    trace(2,"%s", "#SATPOSITION_END\n");
 }
 /* set selected satellite ephemeris --------------------------------------------
 * Set selected satellite ephemeris for multiple ones like LNAV - CNAV, I/NAV -

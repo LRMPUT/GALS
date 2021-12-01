@@ -365,7 +365,7 @@ static void decode_obsh(FILE *fp, char *buff, double ver, int *tsys,
     const char *p;
     char *label=buff+60,str[4];
     
-    trace(4,"decode_obsh: ver=%.2f\n",ver);
+    // trace(4,"decode_obsh: ver=%.2f\n",ver);
     
     if      (strstr(label,"MARKER NAME"         )) {
         if (sta) setstr(sta->name,buff,60);
@@ -645,7 +645,7 @@ static int readrnxh(FILE *fp, double *ver, char *type, int *sys, int *tsys,
     char buff[MAXRNXLEN],*label=buff+60;
     int i=0;
     
-    trace(3,"readrnxh:\n");
+    //trace(3,"readrnxh:\n");
     
     *ver=2.10; *type=' '; *sys=SYS_GPS;
     
@@ -702,7 +702,7 @@ static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
     int i,j,n;
     char satid[8]="";
     
-    trace(4,"decode_obsepoch: ver=%.2f\n",ver);
+   // trace(4,"decode_obsepoch: ver=%.2f\n",ver);
     
     if (ver<=2.99) { /* ver.2 */
         if ((n=(int)str2num(buff,29,3))<=0) return 0;
@@ -739,7 +739,7 @@ static int decode_obsepoch(FILE *fp, char *buff, double ver, gtime_t *time,
             return 0;
         }
     }
-    trace(4,"decode_obsepoch: time=%s flag=%d\n",time_str(*time,3),*flag);
+    //trace(4,"decode_obsepoch: time=%s flag=%d\n",time_str(*time,3),*flag);
     return n;
 }
 /* decode observation data ---------------------------------------------------*/
@@ -752,14 +752,14 @@ static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
     char satid[8]="";
     int i,j,n,m,stat=1,p[MAXOBSTYPE],k[16],l[16];
     
-    trace(4,"decode_obsdata: ver=%.2f\n",ver);
+    // trace(4,"decode_obsdata: ver=%.2f\n",ver);
     
     if (ver>2.99) { /* ver.3 */
         sprintf(satid,"%.3s",buff);
         obs->sat=(uint8_t)satid2no(satid);
     }
     if (!obs->sat) {
-        trace(4,"decode_obsdata: unsupported sat sat=%s\n",satid);
+      //  trace(4,"decode_obsdata: unsupported sat sat=%s\n",satid);
         stat=0;
     }
     else if (!(satsys(obs->sat,NULL)&mask)) {
@@ -848,7 +848,7 @@ static int decode_obsdata(FILE *fp, char *buff, double ver, int mask,
             case 3: obs->SNR[p[i]]=(uint16_t)(val[i]/SNR_UNIT+0.5); break;
         }
     }
-    trace(4,"decode_obsdata: time=%s sat=%2d\n",time_str(obs->time,0),obs->sat);
+  //  trace(4,"decode_obsdata: time=%s sat=%2d\n",time_str(obs->time,0),obs->sat);
     return 1;
 }
 /* save cycle slips ----------------------------------------------------------*/
@@ -967,7 +967,7 @@ static void set_index(double ver, int sys, const char *opt,
     }
     for (i=0;i<n;i++) {
         if (!ind->code[i]||!ind->pri[i]||ind->pos[i]>=0) continue;
-        trace(4,"reject obs type: sys=%2d, obs=%s\n",sys,tobs[i]);
+       // trace(4,"reject obs type: sys=%2d, obs=%s\n",sys,tobs[i]);
     }
     ind->n=n;
     
@@ -1035,7 +1035,7 @@ static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
     uint8_t slips[MAXSAT][NFREQ+NEXOBS]={{0}};
     int i,n,flag=0,stat=0;
     
-    trace(4,"readrnxobs: rcv=%d ver=%.2f tsys=%d\n",rcv,ver,tsys);
+    //trace(4,"readrnxobs: rcv=%d ver=%.2f tsys=%d\n",rcv,ver,tsys);
     
     if (!obs||rcv>MAXRCV) return 0;
     
@@ -1066,7 +1066,7 @@ static int readrnxobs(FILE *fp, gtime_t ts, gtime_t te, double tint,
             if ((stat=addobsdata(obs,data+i))<0) break;
         }
     }
-    trace(4,"readrnxobs: nobs=%d stat=%d\n",obs->n,stat);
+    //trace(4,"readrnxobs: nobs=%d stat=%d\n",obs->n,stat);
     
     free(data);
     
@@ -1079,7 +1079,7 @@ static int decode_eph(double ver, int sat, gtime_t toc, const double *data,
     eph_t eph0={0};
     int sys;
     
-    trace(4,"decode_eph: ver=%.2f sat=%2d\n",ver,sat);
+    //trace(4,"decode_eph: ver=%.2f sat=%2d\n",ver,sat);
     
     sys=satsys(sat,NULL);
     
@@ -1191,7 +1191,7 @@ static int decode_geph(double ver, int sat, gtime_t toc, double *data,
     double tow,tod;
     int week,dow;
     
-    trace(4,"decode_geph: ver=%.2f sat=%2d\n",ver,sat);
+    //trace(4,"decode_geph: ver=%.2f sat=%2d\n",ver,sat);
     
     if (satsys(sat,NULL)!=SYS_GLO) {
         trace(3,"glonass ephemeris error: invalid satellite sat=%2d\n",sat);
@@ -1246,7 +1246,7 @@ static int decode_seph(double ver, int sat, gtime_t toc, double *data,
     seph_t seph0={0};
     int week;
     
-    trace(4,"decode_seph: ver=%.2f sat=%2d\n",ver,sat);
+    //trace(4,"decode_seph: ver=%.2f sat=%2d\n",ver,sat);
     
     if (satsys(sat,NULL)!=SYS_SBS) {
         trace(3,"geo ephemeris error: invalid satellite sat=%2d\n",sat);
@@ -1281,7 +1281,7 @@ static int readrnxnavb(FILE *fp, const char *opt, double ver, int sys,
     int i=0,j,prn,sat=0,sp=3,mask;
     char buff[MAXRNXLEN],id[8]="",*p;
     
-    trace(4,"readrnxnavb: ver=%.2f sys=%d\n",ver,sys);
+    //trace(4,"readrnxnavb: ver=%.2f sys=%d\n",ver,sys);
     
     /* set system mask */
     mask=set_sysmask(opt);
@@ -1409,7 +1409,7 @@ static int readrnxnav(FILE *fp, const char *opt, double ver, int sys,
     seph_t seph;
     int stat,type;
     
-    trace(3,"readrnxnav: ver=%.2f sys=%d\n",ver,sys);
+    //trace(3,"readrnxnav: ver=%.2f sys=%d\n",ver,sys);
     
     if (!nav) return 0;
     
@@ -1437,7 +1437,7 @@ static int readrnxclk(FILE *fp, const char *opt, int index, nav_t *nav)
     int i,j,sat,mask;
     char buff[MAXRNXLEN],satid[8]="";
     
-    trace(3,"readrnxclk: index=%d\n", index);
+    //trace(3,"readrnxclk: index=%d\n", index);
     
     if (!nav) return 0;
     
@@ -1491,7 +1491,7 @@ static int readrnxfp(FILE *fp, gtime_t ts, gtime_t te, double tint,
     int sys,tsys=TSYS_GPS;
     char tobs[NUMSYS][MAXOBSTYPE][4]={{""}};
     
-    trace(3,"readrnxfp: flag=%d index=%d\n",flag,index);
+    //trace(3,"readrnxfp: flag=%d index=%d\n",flag,index);
     
     /* read RINEX file header */
     if (!readrnxh(fp,&ver,type,&sys,&tsys,tobs,nav,sta)) return 0;
@@ -1522,7 +1522,7 @@ static int readrnxfile(const char *file, gtime_t ts, gtime_t te, double tint,
     int cstat,stat;
     char tmpfile[1024];
     
-    trace(3,"readrnxfile: file=%s flag=%d index=%d\n",file,flag,index);
+    //trace(3,"readrnxfile: file=%s flag=%d index=%d\n",file,flag,index);
     
     if (sta) init_sta(sta);
     
@@ -1587,7 +1587,7 @@ extern int readrnxt(const char *file, int rcv, gtime_t ts, gtime_t te,
     const char *p;
     char type=' ',*files[MAXEXFILE]={0};
     
-    trace(3,"readrnxt: file=%s rcv=%d\n",file,rcv);
+   // trace(3,"readrnxt: file=%s rcv=%d\n",file,rcv);
     
     if (!*file) {
         return readrnxfp(stdin,ts,te,tint,opt,0,1,&type,obs,nav,sta);
@@ -1621,7 +1621,7 @@ extern int readrnx(const char *file, int rcv, const char *opt, obs_t *obs,
 {
     gtime_t t={0};
     
-    trace(3,"readrnx : file=%s rcv=%d\n",file,rcv);
+    //trace(3,"readrnx : file=%s rcv=%d\n",file,rcv);
     
     return readrnxt(file,rcv,t,t,0.0,opt,obs,nav,sta);
 }
@@ -1678,7 +1678,7 @@ extern int readrnxc(const char *file, nav_t *nav)
     int i,n,index=0,stat=1;
     char *files[MAXEXFILE]={0},type;
     
-    trace(3,"readrnxc: file=%s\n",file);
+    //trace(3,"readrnxc: file=%s\n",file);
     
     for (i=0;i<MAXEXFILE;i++) {
         if (!(files[i]=(char *)malloc(1024))) {

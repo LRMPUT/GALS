@@ -3114,9 +3114,9 @@ extern void traceobs(int level, const obsd_t *obs, int n)
     for (i=0;i<n;i++) {
         time2str(obs[i].time,str,3);
         satno2id(obs[i].sat,id);
-        fprintf(fp_trace," (%2d) %s %-3s rcv%d %13.3f %13.3f %13.3f %13.3f %d %d %d %d %3.1f %3.1f\n",
-              i+1,str,id,obs[i].rcv,obs[i].L[0],obs[i].L[1],obs[i].P[0],
-              obs[i].P[1],obs[i].LLI[0],obs[i].LLI[1],obs[i].code[0],
+        fprintf(fp_trace," (%2d) %s %-3s %2d rcv%d %13.3f %13.3f %13.3f %13.3f %7.3f %7.3f %d %d %d %d %3.1f %3.1f\n",
+              i+1,str,id,obs[i].sat,obs[i].rcv,obs[i].L[0],obs[i].L[1],obs[i].P[0],
+              obs[i].P[1],obs[i].D[0],obs[i].D[1],obs[i].LLI[0],obs[i].LLI[1],obs[i].code[0],
               obs[i].code[1],obs[i].SNR[0]*SNR_UNIT,obs[i].SNR[1]*SNR_UNIT);
     }
     fflush(fp_trace);
@@ -3534,7 +3534,7 @@ extern double geodist(const double *rs, const double *rr, double *e)
     for (i=0;i<3;i++) e[i]=rs[i]-rr[i];
     r=norm(e,3);
     for (i=0;i<3;i++) e[i]/=r;
-    return r+OMGE*(rs[0]*rr[1]-rs[1]*rr[0])/CLIGHT;
+    return r ;//+OMGE*(rs[0]*rr[1]-rs[1]*rr[0])/CLIGHT;
 }
 /* satellite azimuth/elevation angle -------------------------------------------
 * compute satellite azimuth/elevation angle

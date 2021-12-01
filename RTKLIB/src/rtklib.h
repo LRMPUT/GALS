@@ -136,12 +136,12 @@ extern "C" {
 #endif
 
 #define SNR_UNIT    0.001               /* SNR unit (dBHz) */
-
+#define TRACE
 #define MINPRNGPS   1                   /* min satellite PRN number of GPS */
 #define MAXPRNGPS   32                  /* max satellite PRN number of GPS */
 #define NSATGPS     (MAXPRNGPS-MINPRNGPS+1) /* number of GPS satellites */
 #define NSYSGPS     1
-
+#define ENAGLO
 #ifdef ENAGLO
 #define MINPRNGLO   1                   /* min satellite slot number of GLONASS */
 #define MAXPRNGLO   27                  /* max satellite slot number of GLONASS */
@@ -153,6 +153,7 @@ extern "C" {
 #define NSATGLO     0
 #define NSYSGLO     0
 #endif
+#define ENAGAL
 #ifdef ENAGAL
 #define MINPRNGAL   1                   /* min satellite PRN number of Galileo */
 #define MAXPRNGAL   36                  /* max satellite PRN number of Galileo */
@@ -164,6 +165,7 @@ extern "C" {
 #define NSATGAL     0
 #define NSYSGAL     0
 #endif
+#define ENAQZS
 #ifdef ENAQZS
 #define MINPRNQZS   193                 /* min satellite PRN number of QZSS */
 #define MAXPRNQZS   202                 /* max satellite PRN number of QZSS */
@@ -179,6 +181,7 @@ extern "C" {
 #define NSATQZS     0
 #define NSYSQZS     0
 #endif
+#define ENACMP
 #ifdef ENACMP
 #define MINPRNCMP   1                   /* min satellite sat number of BeiDou */
 #define MAXPRNCMP   63                  /* max satellite sat number of BeiDou */

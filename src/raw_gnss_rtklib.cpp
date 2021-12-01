@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../RTKLIB/src/rtklib.h"
-#define ENACMP 0 // enable BeiDou
 
+#define TRACE
 // extern void postposRegisterPub(ros::NodeHandle &n);
 // extern void rtkposRegisterPub(ros::NodeHandle &n);
 // extern void pntposRegisterPub(ros::NodeHandle &n);
@@ -71,19 +71,21 @@ int main(int argc, char **argv)
 	prcopt.tropopt = TROPOPT_SAAS;        // troposphere option: Saastamoinen model
 	prcopt.ionoopt = IONOOPT_BRDC;		// ionosphere option: Broad cast
 	prcopt.sateph = EPHOPT_BRDC;			// ephemeris option: broadcast ephemeris
-
+	// prcopt.dynamics = 0;
+	// prcopt.niter = 1;
 	prcopt.modear = 3;					// AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold)
-
+	// prcopt.dynamics = 0;
 	solopt.outopt = 1;					// output processing options (0:no,1:yes)
 	solopt.timef = 0;						// time format (0:sssss.s,1:yyyy/mm/dd hh:mm:ss.s)
 	solopt.timeu = 3;						// time digits under decimal point
 	solopt.sep[0] = ',';					// field separator
 	solopt.sstat= 0;						// solution statistics level (0:off,1:states,2:residuals)
-	solopt.trace = 0;						// debug trace level (0:off,1-5:debug)
-	solopt.sstat = 0;						// get the solution file
+	solopt.trace = 2;						// debug trace level (0:off,1-5:debug)
+	solopt.sstat = 1;						// get the solution file
 	solopt.posf = SOLF_LLH;
 	solopt.height = 0;
 
+	// solopt.maxsolstd = 0.1;
 	char *rov="",*base="";
 	char infile_[10][1024]={""}, *infile[10];
 	char outfile[1024];

@@ -1763,8 +1763,9 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     char msg[128]="";
     
     trace(3,"rtkpos  : time=%s n=%d\n",time_str(obs[0].time,3),n);
-    trace(4,"obs=\n"); traceobs(4,obs,n);
-    
+    trace(2,"#OBSERVATIONS_START\n");
+    traceobs(2,obs,n);
+    trace(2,"#OBSERVATIONS_END\n");
     /* set base staion position */
     if (opt->refpos<=POSOPT_RINEX&&opt->mode!=PMODE_SINGLE&&
         opt->mode!=PMODE_MOVEB) {
@@ -1790,6 +1791,7 @@ extern int rtkpos(rtk_t *rtk, const obsd_t *obs, int n, const nav_t *nav)
     /* single point positioning */
     if (opt->mode==PMODE_SINGLE) {
         outsolstat(rtk);
+        // showmsg("%13.3f %13.3f %13.3f", rtk->sol.rr[0], rtk->sol.rr[1], rtk->sol.rr[2]);
         return 1;
     }
     /* suppress output of single solution */
