@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../RTKLIB/src/rtklib.h"
+// #include "raw_gnss_rtklib/my_g2o.h"
 
 #define TRACE
 // extern void postposRegisterPub(ros::NodeHandle &n);
@@ -23,7 +24,7 @@
 
 int main(int argc, char **argv)
 {
-	
+	// my_g2o_main();
     ros::init(argc, argv, "raw_gnss_rtklib_node");
 	ros::NodeHandle nh("~");
 	ROS_INFO("\033[1;32m----> raw_gnss_rtklib_node Started.\033[0m");
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
 	// prcopt.dynamics = 0;
 	// prcopt.niter = 1;
 	prcopt.modear = 3;					// AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold)
-	// prcopt.dynamics = 0;
+	prcopt.dynamics = 0; 	// Works for DGPS, not for single positioning
 	solopt.outopt = 1;					// output processing options (0:no,1:yes)
 	solopt.timef = 0;						// time format (0:sssss.s,1:yyyy/mm/dd hh:mm:ss.s)
 	solopt.timeu = 3;						// time digits under decimal point

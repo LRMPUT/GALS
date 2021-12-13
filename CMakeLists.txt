@@ -14,6 +14,18 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+# ADD g2o
+LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/EXTERNAL/g2o/cmake_modules)
+find_package(G2O REQUIRED)
+find_package(Ceres REQUIRED)
+IF(NOT G2O_FOUND)
+   message(FATAL_ERROR "G2O not found.")
+ENDIF()
+include_directories(
+       ${PROJECT_SOURCE_DIR}/EXTERNAL/g2o
+       ${PROJECT_SOURCE_DIR}/EXTERNAL/g2o/build
+)
+
 find_package(Eigen3 3.1.0 REQUIRED)
 
 add_subdirectory(./RTKLIB/)
@@ -28,7 +40,7 @@ add_library(gis RTKLIB/src/gis.c)
 add_library(ionex RTKLIB/src/ionex.c)
 add_library(lambda RTKLIB/src/lambda.c)
 add_library(options RTKLIB/src/options.c)
-add_library(pntpos RTKLIB/src/pntpos.c)
+add_library(pntpos RTKLIB/src/pntpos.cpp)
 add_library(postpos RTKLIB/src/postpos.c)
 add_library(ppp_ar RTKLIB/src/ppp_ar.c)
 add_library(ppp RTKLIB/src/ppp.c)
@@ -153,6 +165,8 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
+  ${G2O_INCLUDE_DIR}
+  ${CERES_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -168,7 +182,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/raw_gnss_rtklib.cpp
+add_executable(${PROJECT_NAME}_node src/raw_gnss_rtklib.cpp src/GPSEdge.cpp
 ./RTKLIB/src/rtkcmn.c
 ./RTKLIB/src/rtkpos.c
 ./RTKLIB/src/postpos.c
@@ -187,6 +201,7 @@ add_executable(${PROJECT_NAME}_node src/raw_gnss_rtklib.cpp
 ## same as for the library above
 #add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+SET(G2O_LIBRARIES ${G2O_STUFF_LIBRARY} ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CHOLMOD} ${G2O_SOLVER_CSPARSE} ${G2O_SOLVER_DENSE} ${G2O_SOLVER_PCG} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_SOLVER_STRUCTURE_ONLY} ${G2O_SOLVER_EIGEN} ${G2O_SOLVER_CSPARSE} ${G2O_SOLVER_CSPARSE_EXTENSION})
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
@@ -197,8 +212,26 @@ target_link_libraries(${PROJECT_NAME}_node
   stream streamsvr tle
   gis tides
   # qzslex
+   ${G2O_LIBRARIES}
+   ${G2O_TYPES_SLAM2D}
+   ${G2O_TYPES_SLAM3D}
+   ${CERES_LIBRARIES}
 )
 
+target_link_libraries(pntpos
+  ${catkin_LIBRARIES}
+  ${EIGEN3_LIBS}
+  # convkml convrnx datum download ephemeris geoid ionex lambda
+  # options postpos ppp_ar ppp preceph  rcvraw rinex
+  # rtcm rtcm2 rtcm3 rtcm3e rtkcmn rtkpos rtksvr sbas solution
+  # stream streamsvr tle
+  # gis tides
+  # qzslex
+  ${G2O_LIBRARIES}
+  ${G2O_TYPES_SLAM2D}
+  ${G2O_TYPES_SLAM3D}
+  ${CERES_LIBRARIES}
+)
 #############
 ## Install ##
 #############
