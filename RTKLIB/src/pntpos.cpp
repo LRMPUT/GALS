@@ -30,7 +30,8 @@
 #include <iostream>
 // #include "my_g2o.h"
 // #include "g2o/types/slam3d/GPSEdge.h"
-#include "../../../raw_gnss_rtklib/include/raw_gnss_rtklib/GPSEdge.h"
+#include "GPSEdge.h"
+#include "BiasVertex.h"
 G2O_USE_TYPE_GROUP(slam2d);
 G2O_USE_TYPE_GROUP(slam3d);
 G2O_USE_OPTIMIZATION_LIBRARY(dense);
@@ -403,8 +404,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     // --------------------- g2o part start -----------------------------------
     
     static int cnt = 0;
-    // if (cnt++ == 2)
-    //  exit(0);
+    if (cnt++ == 1000)
+     exit(0);
 
     int maxIterations = 100;
     g2o::SparseOptimizer optimizer;
@@ -418,15 +419,22 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     int id = 0;
     // Add vertex to be found
     g2o::VertexSE3 *vertex = new g2o::VertexSE3;
-    g2o::Isometry3 tf = g2o::Isometry3::Identity();
-    tf.translation() = Eigen::Vector3d(0,0,0);
-    vertex->setEstimate(tf);
+    static g2o::Isometry3 initPose = g2o::Isometry3::Identity();
+    // showmsg("Init pose: %13.3f, %13.3f %13.3f", initPose.translation()(0), initPose.translation()(1), initPose.translation()(2));
+    vertex->setEstimate(initPose);
     vertex->setId(id++);
     vertex->setFixed(false);
     vertices.push_back(vertex);
     optimizer.addVertex(vertex);
-    g2o::GPSEdge::bias = 0;
 
+    // Bias Vertex
+    g2o::BiasVertex *bv = new g2o::BiasVertex();
+    Eigen::Matrix<double, 1, 1> m1;
+    // Eigen::Matr
+    bv->setEstimate(m1);
+    bv->setId(id++);
+    bv->setFixed(false);
+    optimizer.addVertex(bv);
     // nv = rescode(i, obs, n, rs, dts, vare, svh, nav, x, opt, v, H, var, azel, vsat, resp, &ns, my_prng);
     // my_g2o_main(i,obs,n,rs,dts,vare,svh,nav,x,opt,v,H,var,azel,vsat,resp,&ns);
 
@@ -526,6 +534,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                         fileOut.open("my_sol.txt", std::ios_base::app);
                         fileOut << std::setprecision(15) << week << "," << tow << "," << m_out(0, 3) << "," << m_out(1, 3) << "," << m_out(2, 3) << std::endl;
                         fileOut.close();
+                        // if (initPose.translation() == Eigen::Vector3d(0,0,0))
+                            initPose.translation() = Eigen::Vector3d(m_out(0, 3), m_out(1, 3), m_out(2, 3));
                         showmsg("g2o out: %2d,%3.3f %15.5f %15.5f %15.5f", week, tow, m_out(0, 3), m_out(1, 3), m_out(2, 3));
                     }
                 }

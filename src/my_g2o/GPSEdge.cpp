@@ -2,7 +2,7 @@
 // #include <pose_graph_mapping/custom_types/robot_gps.h>
 // #include "include/GPSEdge.h"
 #include <iostream>
-#include "../include/raw_gnss_rtklib/GPSEdge.h"
+#include "GPSEdge.h"
 
 using namespace std;
 using namespace Eigen;
