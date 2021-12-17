@@ -163,6 +163,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  include/my_g2o
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${G2O_INCLUDE_DIR}
@@ -182,7 +183,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/raw_gnss_rtklib.cpp src/GPSEdge.cpp
+add_executable(${PROJECT_NAME}_node src/raw_gnss_rtklib.cpp src/my_g2o/GPSEdge.cpp src/my_g2o/BiasVertex.cpp
 ./RTKLIB/src/rtkcmn.c
 ./RTKLIB/src/rtkpos.c
 ./RTKLIB/src/postpos.c

@@ -4,7 +4,8 @@
 #include <g2o/types/data/g2o_types_data_api.h>
 #include <g2o/core/base_unary_edge.h>
 #include <g2o/types/slam2d/vertex_se2.h>
-
+#include <g2o/config.h>
+#include <g2o/core/base_multi_edge.h>
 #include "g2o/core/base_binary_edge.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -30,8 +31,8 @@
 
 namespace g2o{
 
-
-class G2O_TYPES_DATA_API GPSEdge: public BaseBinaryEdge<1, Eigen::Vector2d, VertexSE3, VertexSE3>
+// E - meausrement type, D - error/information dimenstion
+class G2O_TYPES_DATA_API GPSEdge: public BaseMultiEdge<1, Eigen::Vector2d>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

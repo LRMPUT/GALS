@@ -3,6 +3,7 @@
 // #include "include/GPSEdge.h"
 #include <iostream>
 #include "GPSEdge.h"
+#include "BiasVertex.h"
 
 using namespace std;
 using namespace Eigen;
@@ -22,19 +23,27 @@ namespace g2o
 {
   double GPSEdge::bias;
 
-  GPSEdge::GPSEdge() :BaseBinaryEdge<1, Eigen::Vector2d, VertexSE3, VertexSE3>()
+  GPSEdge::GPSEdge() :BaseMultiEdge<1, Eigen::Vector2d>()
   {
   // resizeParameters(1);
+    resize(3); // Resized number of vertexes
+    // _information.resize(2, 2);
+		// _error.resize(3, 1);
+		// _measurement.resize(2, 1);
+		// _dimension = 3;
   }
 
   void GPSEdge::computeError()
   {
     const VertexSE3 *v1 = static_cast<const VertexSE3 *>(_vertices[0]); // Receiver
     const VertexSE3 *v2 = static_cast<const VertexSE3 *>(_vertices[1]); // Satellite
+    const BiasVertex *v3 = static_cast<const BiasVertex *>(_vertices[2]); // Satellite
+    // std::cout << "v3 " << v3->estimate()[0] << std::endl;
     Vector3d t = v1->estimate().translation() - v2->estimate().translation();
 
     double current_dist = t.norm() +  OMGE*(v2->estimate().translation()[0]*v1->estimate().translation()[1]-v2->estimate().translation()[1]*v1->estimate().translation()[0])/CLIGHT;;
-    _error[0] = current_dist  - _measurement[0]; // - bias;s
+    double bias = v3->estimate()[0];
+    _error[0] = current_dist  - _measurement[0] + bias; // - bias;s
 
     // _error[1] =  _error[0] - bias;
     // _error[1] = 10;
@@ -45,8 +54,8 @@ namespace g2o
 
   void GPSEdge::setInformation(const double &i)
   {
-    _information[0] = i;
-
+    _information(0,0) = i;
+    // _information(1,1) = i;
     // _information(1,1) = 5;
   }
 

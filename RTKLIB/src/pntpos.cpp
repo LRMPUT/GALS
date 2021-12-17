@@ -312,7 +312,9 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         /* pseudorange residual */
         v[nv]=P-(r+dtr-CLIGHT*dts[i*2]+dion+dtrp);
         // showmsg("nv: %3d, P:%13.3f, r: %13.3f, dtr: %8f, dts: %8f, dion: %8f, dtrp: %8f", nv, P, r, dtr, -CLIGHT*dts[i*2], dion, dtrp);
-        double tmp = P -(dtr-CLIGHT*dts[i*2]+dion+dtrp);
+        // double tmp = P -(dtr-CLIGHT*dts[i*2]+dion+dtrp);
+
+        double tmp = P -(-CLIGHT*dts[i*2]+dion+dtrp); // No dtr
 
         // else
         //     trace(2,"Iter: %2d\n", iter);
@@ -404,7 +406,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     // --------------------- g2o part start -----------------------------------
     
     static int cnt = 0;
-    if (cnt++ == 1000)
+    if (cnt++ == 5)
      exit(0);
 
     int maxIterations = 100;
@@ -429,7 +431,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 
     // Bias Vertex
     g2o::BiasVertex *bv = new g2o::BiasVertex();
-    Eigen::Matrix<double, 1, 1> m1;
+    Eigen::Matrix<double, 1, 1> m1 = Eigen::Matrix<double,1,1>::Zero();
+    // m1[0] = -99240.731037;
     // Eigen::Matr
     bv->setEstimate(m1);
     bv->setId(id++);
@@ -501,17 +504,21 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                         vertices.push_back(vertexSat);
                         // Add edge beteen 0-th Vertex (Receiver) and Satellite
                         g2o::GPSEdge *edgeSat = new g2o::GPSEdge;
-                        edgeSat->setVertex(0, vertices[0]);
+                        edgeSat->setVertex(0,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (vertices[0]));
                         edgeSat->setVertex(1, vertexSat);
+                        edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (bv));
                         edgeSat->setInformation(1.0 / sqrt(var[vari++]));
                         edgeSat->setMeasurement(my_prng[j]);
                         edges.push_back(edgeSat);
-                        optimizer.addVertex(vertexSat);
+                        optimizer.addVertex(vertexSat); 
                         optimizer.addEdge(edgeSat);
                         // edgeSat->bias = 0;
                     }
                 }
-
+                if (initPose.translation() == Eigen::Vector3d(0,0,0)){
+                    initPose.translation() = Eigen::Vector3d(sol->rr[0],sol->rr[1],sol->rr[2]);
+                    vertex->setEstimate(initPose);
+                }
                 optimizer.initializeOptimization();
                 optimizer.optimize(maxIterations);
 
@@ -537,6 +544,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                         // if (initPose.translation() == Eigen::Vector3d(0,0,0))
                             initPose.translation() = Eigen::Vector3d(m_out(0, 3), m_out(1, 3), m_out(2, 3));
                         showmsg("g2o out: %2d,%3.3f %15.5f %15.5f %15.5f", week, tow, m_out(0, 3), m_out(1, 3), m_out(2, 3));
+
+                        showmsg("bias : %15.5f", bv->estimate()[0]);
                     }
                 }
             }
