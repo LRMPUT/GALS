@@ -28,14 +28,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <iostream>
-// #include "my_g2o.h"
-// #include "g2o/types/slam3d/GPSEdge.h"
-#include "GPSEdge.h"
-#include "BiasVertex.h"
-#include "g2o/core/sparse_optimizer_terminate_action.h"
-G2O_USE_TYPE_GROUP(slam2d);
-G2O_USE_TYPE_GROUP(slam3d);
-G2O_USE_OPTIMIZATION_LIBRARY(dense);
+#include "myOptimization.h"
 
 /* constants/macros ----------------------------------------------------------*/
 
@@ -408,52 +401,10 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     // --------------------- g2o part start -----------------------------------
     
     static int cnt = 0;
-    if (cnt++ == 5)
-     exit(0);
-
-    int maxIterations = 200;
-    g2o::SparseOptimizer optimizer;
-    std::vector<g2o::VertexSE3*> vertices;
-    std::vector<g2o::GPSEdge*> edges;
-    optimizer.setVerbose(false);
-
-    g2o::SparseOptimizerTerminateAction* terminateAction = new g2o::SparseOptimizerTerminateAction;
-    terminateAction->setGainThreshold(0.0001); // 0.0000001
-    terminateAction->setMaxIterations(250);
-    optimizer.addPostIterationAction(terminateAction);
-      // allocate the solver
-    g2o::OptimizationAlgorithmProperty solverProperty;
-    optimizer.setAlgorithm(g2o::OptimizationAlgorithmFactory::instance()->construct("lm_dense", solverProperty));
-    int id = 0;
-    // Add vertex to be found
-    g2o::VertexSE3 *vertex = new g2o::VertexSE3;
-    static g2o::Isometry3 initPose = g2o::Isometry3::Identity();
-    static double lastBiases[5]= {0,0,0,0,0};
-    // showmsg("Init pose: %13.3f, %13.3f %13.3f", initPose.translation()(0), initPose.translation()(1), initPose.translation()(2));
-    vertex->setEstimate(initPose);
-    vertex->setId(id++);
-    vertex->setFixed(false);
-    vertices.push_back(vertex);
-    optimizer.addVertex(vertex);
-
-    // Bias Vertex
-    std::vector< g2o::BiasVertex*> biases; // [0 - GPS, 1- Glonass, 2 - Galileo, 3 - Beidu]
-    for (int i=0; i<5; i++){
-        g2o::BiasVertex *bv = new g2o::BiasVertex();
-        Eigen::Matrix<double, 1, 1> m1 = Eigen::Matrix<double,1,1>::Zero();
-        m1[0] = lastBiases[i];
-        bv->setId(id++);
-        bv->setFixed(false);
-        bv->setEstimate(m1);
-        biases.push_back(bv);
-        optimizer.addVertex(bv);
-    }
-    // m1[0] = -99240.731037;
-    // Eigen::Matr
-    // bv->setEstimate(m1);
-
-    // nv = rescode(i, obs, n, rs, dts, vare, svh, nav, x, opt, v, H, var, azel, vsat, resp, &ns, my_prng);
-    // my_g2o_main(i,obs,n,rs,dts,vare,svh,nav,x,opt,v,H,var,azel,vsat,resp,&ns);
+    if (cnt++ > 2000)
+    //     return 0;
+    // if (cnt > 5000)
+        exit(0);
 
     // --------------------- g2o part end -----------------------------------
 
@@ -503,87 +454,49 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 
             if (stat)
             {
+
+                static bool initalize = true;
+                // Initalize g2o optimization
+                MyOptimization myOptimization(true, 200);
+                // Add vertex pose to be found
+                // Estimate with last pose or / RTKLIB output ?
+                Eigen::Vector3d libPose(sol->rr[0],sol->rr[1],sol->rr[2]);
+                static  Eigen::Vector3d lastEstPose = Eigen::Vector3d::Zero();
+                if (initalize) {
+                    initalize = false;
+                    myOptimization.addRoverVertex(libPose);
+                }
+                else
+                    myOptimization.addRoverVertex(lastEstPose);
+
+                // Estimate with last biases or / RTKLIB output ?
+                // std::vector<double> libBias; 
+                // for (int k=3; k < 8; k++) 
+                //     libBias.push_back(x[k]);
+                // myOptimization.addBiasesVertices(libBias);
+                myOptimization.addBiasesVertices(myOptimization.getLastBiasesValue());
                 int vari = 0;
+
                 for (int j = 0; j < n; j++)
                 {
                     if (vsat[j] == 1)
-                    {
+                    {                     
                         // showmsg("I: %2d Sat %3d  PRNG: %13.3f Var: %4.3f  Var2: %4.3f xyz: %13.3f %13.3f %13.3f", j, obs[j].sat, my_prng[j], 1/sqrt(var[vari]), var[vari], rs[j*6], rs[1+j*6],rs[2+j*6]);
                         // showmsg("I: %2d Sat %3d ", j, obs[j].sat);
 
-                        g2o::VertexSE3 *vertexSat = new g2o::VertexSE3;
-                        g2o::Isometry3 tf = g2o::Isometry3::Identity();
-                        tf.translation() = Eigen::Vector3d(rs[j * 6], rs[1 + j * 6], rs[2 + j * 6]);
-                        vertexSat->setEstimate(tf);
-                        vertexSat->setId(id++);
-                        vertexSat->setFixed(true);
-                        vertices.push_back(vertexSat);
                         // Add edge beteen 0-th Vertex (Receiver) and Satellite
-                        g2o::GPSEdge *edgeSat = new g2o::GPSEdge;
-                        edgeSat->setVertex(0,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (vertices[0]));
-                        edgeSat->setVertex(1, vertexSat);
-                        
-                        int sys=satsys(obs[j].sat,NULL);
-                        if      (sys==SYS_GPS) {edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[0]));}
-                        else if (sys==SYS_GLO) {edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[1]));}
-                        else if (sys==SYS_GAL) {edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[2]));}
-                        else if (sys==SYS_CMP) {edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[3]));} 
-                        else if (sys==SYS_QZS) {edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[4]));}            
-                        else{  showmsg("Inny satelita %4d", sys);}
-                        // edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[0]));
-                        edgeSat->setInformation(1.0 / var[vari++]);
-                        edgeSat->setMeasurement(my_prng[j]);
-                        edges.push_back(edgeSat);
-                        optimizer.addVertex(vertexSat); 
-                        optimizer.addEdge(edgeSat);
-                        // edgeSat->bias = 0;
+                        Eigen::Matrix<double, 4, 1> measurement{rs[j * 6], rs[1 + j * 6], rs[2 + j * 6], my_prng[j]};
+                        double information = 1.0 / var[vari++];
+                        int sys = satsys(obs[j].sat, NULL);
+                        myOptimization.addEdgeSatPrior(measurement, information, sys);
                     }
                 }
-                if (initPose.translation() == Eigen::Vector3d(0,0,0)){
-                    initPose.translation() = Eigen::Vector3d(sol->rr[0],sol->rr[1],sol->rr[2]);
-                    vertex->setEstimate(initPose);
-                }
-                optimizer.initializeOptimization();
-                optimizer.optimize(maxIterations);
 
-                for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
-                {
-                    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(it->second);
-                    if (v->id() == 0)
-                    {
-                        Eigen::Matrix4d m_out = v->estimate().matrix();
-                        int week;
-                        double tow = time2gpst(sol->time, &week);
-                        std::ofstream fileOut;
-                        static bool initalizeFile = true;
-                        if (initalizeFile)
-                        {
-                            fileOut.open("my_sol.txt");
-                            fileOut.close();
-                            initalizeFile = false;
-                        }
-                        fileOut.open("my_sol.txt", std::ios_base::app);
-                        fileOut << std::setprecision(15) << week << "," << tow << "," << m_out(0, 3) << "," << m_out(1, 3) << "," << m_out(2, 3) << std::endl;
-                        fileOut.close();
-                        // if (initPose.translation() == Eigen::Vector3d(0,0,0))
-                        static double lastTime = tow;
-                        initPose.translation() = Eigen::Vector3d(m_out(0, 3), m_out(1, 3), m_out(2, 3));
-                        for (int k = 0; k < biases.size(); k++)
-                        {
-
-                            if (abs(lastBiases[k] - biases[k]->estimate()[0]) > 200)
-                            {
-                                // showmsg("Big bias difference")
-                                trace(2, "last bias: %13.3f   new bias: %13.3f time diff: %13.9f \n", lastBiases[k], biases[k]->estimate()[0], tow - lastTime);
-                            }
-                            lastBiases[k] = biases[k]->estimate()[0];
-                        }
-                            lastTime =  tow;
-                        showmsg("g2o out: %2d,%3.3f %15.5f %15.5f %15.5f", week, tow, m_out(0, 3), m_out(1, 3), m_out(2, 3));
-
-                        showmsg("bias : %15.5f  %15.5f  %15.5f  %15.5f %15.5f" ,biases[0]->estimate()[0], biases[1]->estimate()[0], biases[2]->estimate()[0],biases[3]->estimate()[0],biases[4]->estimate()[0]);
-                    }
-                }
+                myOptimization.optimize();
+                int week;
+                double tow = time2gpst(sol->time, &week);
+                myOptimization.processOutput(week, tow);
+                lastEstPose = myOptimization.getLastRoverPose();
             }
 
             free(v); free(H); free(var);
