@@ -401,9 +401,9 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     // --------------------- g2o part start -----------------------------------
     
     static int cnt = 0;
-    if (cnt++ > 2000)
-    //     return 0;
-    // if (cnt > 5000)
+    if (cnt++ > 2)
+    // //     return 0;
+    // // if (cnt > 5000)
         exit(0);
 
     // --------------------- g2o part end -----------------------------------
@@ -474,7 +474,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 // for (int k=3; k < 8; k++) 
                 //     libBias.push_back(x[k]);
                 // myOptimization.addBiasesVertices(libBias);
-                myOptimization.addBiasesVertices(myOptimization.getLastBiasesValue());
+                static std::vector<double> lastEstBiases = {0,0,0,0,0};
+                myOptimization.addBiasesVertices(lastEstBiases);
                 int vari = 0;
 
                 for (int j = 0; j < n; j++)
@@ -497,6 +498,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 double tow = time2gpst(sol->time, &week);
                 myOptimization.processOutput(week, tow);
                 lastEstPose = myOptimization.getLastRoverPose();
+                lastEstBiases = myOptimization.getLastBiasesValue();
             }
 
             free(v); free(H); free(var);

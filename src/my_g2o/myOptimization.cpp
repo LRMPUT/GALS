@@ -114,47 +114,36 @@ void MyOptimization::optimize()
 
 void MyOptimization::processOutput(int week, double tow)
 {
-                for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
-                {
-                    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(it->second);
-                    if (v->id() == 0)
-                    {
-                        Eigen::Matrix4d m_out = v->estimate().matrix();
-                        std::ofstream fileOut;
-                        static bool initalizeFile = true;
-                        if (initalizeFile)
-                        {
-                            fileOut.open("my_sol.txt");
-                            fileOut.close();
-                            initalizeFile = false;
-                        }
-                        fileOut.open("my_sol.txt", std::ios_base::app);
-                        fileOut << std::setprecision(15) << week << "," << tow << "," << m_out(0, 3) << "," << m_out(1, 3) << "," << m_out(2, 3) << std::endl;
-                        fileOut.close();
-                        // if (initPose.translation() == Eigen::Vector3d(0,0,0))
-                        static double lastTime = tow;
-                        // initPose.translation() = Eigen::Vector3d(m_out(0, 3), m_out(1, 3), m_out(2, 3));
-                        // for (int k = 0; k < biases.size(); k++)
-                        {
+  // for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
+  //    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(it->second);
 
-                            // if (abs(lastBiases[k] - biases[k]->estimate()[0]) > 200)
-                            // {
-                            //     // showmsg("Big bias difference")
-                            //     trace(2, "last bias: %13.3f   new bias: %13.3f time diff: %13.9f \n", lastBiases[k], biases[k]->estimate()[0], tow - lastTime);
-                            // }
-                            // lastBiases[k] = biases[k]->estimate()[0];
-                        }
-                            lastTime =  tow;
-                            std::cout << std::setprecision(15) << "g2o out: " <<  week << " " << tow << " " <<  m_out(0, 3)<< " " <<  m_out(1, 3)<< " " <<  m_out(2, 3)<< std::endl;
-                          lastRoverPose = Eigen::Vector3d( m_out(0, 3),  m_out(1, 3),  m_out(2, 3));
-                        // showmsg("g2o out: %2d,%3.3f %15.5f %15.5f %15.5f", week, tow, m_out(0, 3), m_out(1, 3), m_out(2, 3));
-                        // showmsg("bias : %15.5f  %15.5f  %15.5f  %15.5f %15.5f" ,biases[0]->estimate()[0], biases[1]->estimate()[0], biases[2]->estimate()[0],biases[3]->estimate()[0],biases[4]->estimate()[0]);
-                    }
-                    g2o::BiasVertex *bv = static_cast<g2o::BiasVertex *> (optimizer.vertex(2));
-                    // if (v->id() == 1)
-                    {
-                      double bias1 = bv->estimate()[0];
-                        std::cout << std::setprecision(15) << "bias out: " << bias1 << std::endl;
-                    }
-                }
+  // Estimated pose
+  g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(0));
+  Eigen::Matrix4d estPose = v->estimate().matrix();
+  lastRoverPose = Eigen::Vector3d(estPose(0, 3), estPose(1, 3), estPose(2, 3));
+
+  // Estimated biases
+  for (int i = 1; i < 6; i++)
+  {
+    g2o::BiasVertex *bv = static_cast<g2o::BiasVertex *>(optimizer.vertex(i));
+    lastBiasesValue[i - 1] = bv->estimate()[0];
+  }
+
+  // Save results to file
+  saveOutputToFile(estPose, week, tow);
+}
+
+void MyOptimization::saveOutputToFile( Eigen::Matrix4d pose, int week, double tow)
+{
+  std::ofstream fileOut;
+  static bool initalizeFile = true;
+  if (initalizeFile)
+  {
+    fileOut.open("g2o_sol.txt");
+    fileOut.close();
+    initalizeFile = false;
+  }
+  fileOut.open("g2o_sol.txt", std::ios_base::app);
+  fileOut << std::setprecision(15) << week << "," << tow << "," << pose(0, 3) << "," << pose(1, 3) << "," << pose(2, 3) << std::endl;
+  fileOut.close();
 }

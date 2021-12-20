@@ -39,6 +39,7 @@ class MyOptimization
     std::vector<double> getLastBiasesValue();
     void optimize();
     void processOutput(int, double);
+    void saveOutputToFile( Eigen::Matrix4d pose, int week, double tow);
 
     private:
 
