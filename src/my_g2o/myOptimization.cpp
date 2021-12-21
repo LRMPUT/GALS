@@ -26,7 +26,7 @@
 
 #include "myOptimization.h"
 
-MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(5), lastBiasesValue(5), lastVertexId(-1)
+MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(5), lastVertexId(-1), optLevel(0)
 {
 
     // std::vector<g2o::VertexSE3*> vertices;
@@ -39,7 +39,7 @@ MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(5), lastBiase
     optimizer.addPostIterationAction(terminateAction);
     // allocate the solver
     g2o::OptimizationAlgorithmProperty solverProperty;
-    optimizer.setAlgorithm(g2o::OptimizationAlgorithmFactory::instance()->construct("lm_dense", solverProperty)); // GN - can start from (0,0),  LM - must have inital estimate
+    optimizer.setAlgorithm(g2o::OptimizationAlgorithmFactory::instance()->construct("lm_dense", solverProperty)); // GN - can start from (0,0),  LM - must have inital estimate, but works better
 
     lastRoverPose = Eigen::Vector3d::Zero();
     for (int i =0;i<numBiases;i++)
@@ -58,7 +58,7 @@ void MyOptimization::addRoverVertex(const Eigen::Vector3d &est)
     optimizer.addVertex(vertex);
 }
 
-void MyOptimization::addBiasesVertices(const std::vector<double> &est)
+void MyOptimization::addBiasesVertices(const std::array<double,5> &est)
 {
   if (est.size() != numBiases)
     std::cout << "Invalid size of bias vector";
@@ -92,6 +92,7 @@ void MyOptimization::addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, d
   //edges.push_back(edgeSat);
   
   edgeSatPrior->setMeasurement(measurement);
+  edgeSatPrior->setLevel(optLevel);
   // optimizer.addVertex(vertexSat);
   optimizer.addEdge(edgeSatPrior);
 }
@@ -101,14 +102,14 @@ Eigen::Vector3d MyOptimization::getLastRoverPose()
   return lastRoverPose;
 }
 
-std::vector<double> MyOptimization::getLastBiasesValue()
+std::array<double,5> MyOptimization::getLastBiasesValue()
 {
   return lastBiasesValue;
 }
 
 void MyOptimization::optimize()
 {
-    optimizer.initializeOptimization();
+    optimizer.initializeOptimization(optLevel++);
     optimizer.optimize(maxIterations);
 }
 
@@ -118,17 +119,20 @@ void MyOptimization::processOutput(int week, double tow)
   //    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(it->second);
 
   // Estimated pose
-  g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(0));
+  g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases));
   Eigen::Matrix4d estPose = v->estimate().matrix();
   lastRoverPose = Eigen::Vector3d(estPose(0, 3), estPose(1, 3), estPose(2, 3));
 
   // Estimated biases
   for (int i = 1; i < 6; i++)
   {
-    g2o::BiasVertex *bv = static_cast<g2o::BiasVertex *>(optimizer.vertex(i));
-    lastBiasesValue[i - 1] = bv->estimate()[0];
+    g2o::BiasVertex *bv = static_cast<g2o::BiasVertex *>(optimizer.vertex(lastVertexId - numBiases + i));
+    lastBiasesValue[i-1] = bv->estimate()[0];
   }
 
+  // Store estimated values in separate vector
+  OptimizationResults optimResult = OptimizationResults(lastVertexId - numBiases, estPose, lastBiasesValue);
+  optimizationResults.push_back(optimResult);
   // Save results to file
   saveOutputToFile(estPose, week, tow);
 }
@@ -144,6 +148,29 @@ void MyOptimization::saveOutputToFile( Eigen::Matrix4d pose, int week, double to
     initalizeFile = false;
   }
   fileOut.open("g2o_sol.txt", std::ios_base::app);
-  fileOut << std::setprecision(15) << week << "," << tow << "," << pose(0, 3) << "," << pose(1, 3) << "," << pose(2, 3) << std::endl;
+  // fileOut << std::setprecision(15) << week << "," << tow << "," << pose(0, 3) << "," << pose(1, 3) << "," << pose(2, 3) << std::endl;
   fileOut.close();
+}
+
+bool MyOptimization::readLaserData(std::string filename)
+{
+  std::ifstream fileIn;
+  bool ok = false;
+  fileIn.open(filename);
+  if(fileIn.is_open())
+    ok = true;
+  double timestamp, x,y,z,qx,qy,qz,qw;
+  while (fileIn >> timestamp >> x >> y >> z >> qx >> qy >> qz >> qw)
+  {
+      Eigen::Quaterniond quat(qw,qx,qy,qz);
+      Eigen::Vector3d vect(x,y,z);
+      Eigen::Affine3d af;
+      af.linear() = quat.toRotationMatrix();
+      af.translation() = vect;
+      LaserPose laserPose(af, timestamp);
+      laserPoses.push_back(laserPose);
+  }
+  fileIn.close();
+  std::cout << "Read " << laserPoses.size() << " poses" << std::endl;
+  return ok;
 }
