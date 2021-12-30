@@ -393,17 +393,12 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
     my_prng=mat(n+4,1);
-    
-    for (i=0;i<8;i++) x[i]=0;
-  //  sol->rr[0]= sol->rr[1]= sol->rr[2] = 0;
-    // showmsg("Init x:  %13f %13f %13f", sol->rr[0], sol->rr[1], sol->rr[2]);
 
-    
-    static int cnt = 0;
-    if (cnt++ > 500)
-    // //     return 0;
-    // // if (cnt > 5000)
-        exit(0);
+    for (i=0;i<8;i++) x[i]=0;
+
+    static MyOptimization myOptimization(false, 100);
+    static Eigen::Vector3d lastEstPose = Eigen::Vector3d::Zero();
+    static std::array<double, 5> lastEstBiases = {0, 0, 0, 0, 0};
 
     for (i=0;i<MAXITR;i++) {
         // for (j=0;j<8;j++) x[j]=0;
@@ -453,17 +448,16 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             {
 
     // --------------------- g2o part start -----------------------------------
-
-                static bool initalize = true;
+                
                 // Initalize g2o optimization
-                static MyOptimization myOptimization(false, 100);
+                static bool initalize = true;
                 // Add vertex pose to be found
                 // Estimate with last pose or / RTKLIB output ?
                 Eigen::Vector3d libPose(sol->rr[0],sol->rr[1],sol->rr[2]);
-                static  Eigen::Vector3d lastEstPose = Eigen::Vector3d::Zero();
+                
                 if (initalize) {
                     initalize = false;
-                    if(!myOptimization.readLaserData("/home/kcwian/Workspace/catkin_gnss_2/src/raw_gnss_rtklib/evaluation/results/aft_mapped_to_init_trajectory2.txt"))
+                    if (!myOptimization.readLaserData("/home/kcwian/Workspace/catkin_gnss_2/src/raw_gnss_rtklib/evaluation/results/aft_mapped_to_init_trajectory_gps_time.txt"))
                         std::cout << "Can't read laser file" << std::endl;
                     myOptimization.addRoverVertex(libPose);
                 }
@@ -475,7 +469,6 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 // for (int k=3; k < 8; k++) 
                 //     libBias.push_back(x[k]);
                 // myOptimization.addBiasesVertices(libBias);
-                static std::array<double,5> lastEstBiases = {0,0,0,0,0};
                 myOptimization.addBiasesVertices(lastEstBiases);
                 int vari = 0;
 
@@ -494,15 +487,36 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                     }
                 }
 
-                myOptimization.optimize();
                 int week;
                 double tow = time2gpst(sol->time, &week);
+                // Add laser constraints
+                myOptimization.addLaserEdge(week, tow);
+                myOptimization.optimize();
                 myOptimization.processOutput(week, tow);
                 lastEstPose = myOptimization.getLastRoverPose();
                 lastEstBiases = myOptimization.getLastBiasesValue();
+                
+                static int cntEnd = 0;
+                if(cntEnd++ > 10000) {
+                    // myOptimization.optimizeAll();
+                    // exit(0);
+                }
 
     // --------------------- g2o part end -----------------------------------
 
+            }
+            // Fixed solution, but not accurate
+            else{
+                int week;
+                double tow = time2gpst(sol->time, &week);
+                myOptimization.addRoverVertex(lastEstPose);
+                // Add bias vertices anyway, so number of biases for each pose is constant
+                myOptimization.addBiasesVertices(lastEstBiases);
+                myOptimization.addLaserEdge(week, tow);
+                myOptimization.optimize();
+                myOptimization.processOutput(week, tow);
+                lastEstPose = myOptimization.getLastRoverPose();
+                lastEstBiases = myOptimization.getLastBiasesValue();
             }
 
             free(v); free(H); free(var);
@@ -512,6 +526,19 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     }
     if (i>=MAXITR) sprintf(msg,"iteration divergent i=%d",i);
     
+    // If no fixed solution, but with visible sats - GPS time is not missing
+    if (true)
+    {
+        int week;
+        double tow = time2gpst(sol->time, &week);
+        myOptimization.addRoverVertex(lastEstPose);
+        myOptimization.addBiasesVertices(lastEstBiases);
+        myOptimization.addLaserEdge(week, tow);
+        myOptimization.optimize();
+        myOptimization.processOutput(week, tow);
+        lastEstPose = myOptimization.getLastRoverPose();
+        lastEstBiases = myOptimization.getLastBiasesValue();
+    }
     free(v); free(H); free(var);
     free(my_prng);
     return 0;
