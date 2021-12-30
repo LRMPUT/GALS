@@ -507,16 +507,16 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             }
             // Fixed solution, but not accurate
             else{
-                int week;
-                double tow = time2gpst(sol->time, &week);
-                myOptimization.addRoverVertex(lastEstPose);
-                // Add bias vertices anyway, so number of biases for each pose is constant
-                myOptimization.addBiasesVertices(lastEstBiases);
-                myOptimization.addLaserEdge(week, tow);
-                myOptimization.optimize();
-                myOptimization.processOutput(week, tow);
-                lastEstPose = myOptimization.getLastRoverPose();
-                lastEstBiases = myOptimization.getLastBiasesValue();
+                // int week;
+                // double tow = time2gpst(sol->time, &week);
+                // myOptimization.addRoverVertex(lastEstPose);
+                // // Add bias vertices anyway, so number of biases for each pose is constant
+                // myOptimization.addBiasesVertices(lastEstBiases);
+                // myOptimization.addLaserEdge(week, tow);
+                // myOptimization.optimize();
+                // myOptimization.processOutput(week, tow);
+                // lastEstPose = myOptimization.getLastRoverPose();
+                // lastEstBiases = myOptimization.getLastBiasesValue();
             }
 
             free(v); free(H); free(var);
@@ -529,15 +529,15 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     // If no fixed solution, but with visible sats - GPS time is not missing
     if (true)
     {
-        int week;
-        double tow = time2gpst(sol->time, &week);
-        myOptimization.addRoverVertex(lastEstPose);
-        myOptimization.addBiasesVertices(lastEstBiases);
-        myOptimization.addLaserEdge(week, tow);
-        myOptimization.optimize();
-        myOptimization.processOutput(week, tow);
-        lastEstPose = myOptimization.getLastRoverPose();
-        lastEstBiases = myOptimization.getLastBiasesValue();
+        // int week;
+        // double tow = time2gpst(sol->time, &week);
+        // myOptimization.addRoverVertex(lastEstPose);
+        // myOptimization.addBiasesVertices(lastEstBiases);
+        // myOptimization.addLaserEdge(week, tow);
+        // myOptimization.optimize();
+        // myOptimization.processOutput(week, tow);
+        // lastEstPose = myOptimization.getLastRoverPose();
+        // lastEstBiases = myOptimization.getLastBiasesValue();
     }
     free(v); free(H); free(var);
     free(my_prng);
