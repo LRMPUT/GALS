@@ -48,6 +48,9 @@
 #define REL_HUMI    0.7         /* relative humidity for Saastamoinen model */
 #define MIN_EL      (5.0*D2R)   /* min elevation for measurement error (rad) */
 
+// Global optimization, to allow for storing velocity
+static MyOptimization myOptimization(false, 100);
+
 /* pseudorange measurement error variance ------------------------------------*/
 static double varerr(const prcopt_t *opt, double el, int sys)
 {
@@ -396,7 +399,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 
     for (i=0;i<8;i++) x[i]=0;
 
-    static MyOptimization myOptimization(false, 100);
+    // static MyOptimization myOptimization(false, 100);
     static Eigen::Vector3d lastEstPose = Eigen::Vector3d::Zero();
     static std::array<double, 5> lastEstBiases = {0, 0, 0, 0, 0};
 
@@ -448,7 +451,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             {
 
     // --------------------- g2o part start -----------------------------------
-                
+
                 // Initalize g2o optimization
                 static bool initalize = true;
                 // Add vertex pose to be found
@@ -462,6 +465,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                     myOptimization.addRoverVertex(libPose);
                 }
                 else{
+                    // TODO: Check if laser and GPS estimate gives similar pose
                     myOptimization.addRoverVertex(lastEstPose);
                 }
                 // Estimate with last biases or / RTKLIB output ?
@@ -481,7 +485,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 
                         // Add edge beteen 0-th Vertex (Receiver) and Satellite
                         Eigen::Matrix<double, 4, 1> measurement{rs[j * 6], rs[1 + j * 6], rs[2 + j * 6], my_prng[j]};
-                        double information = 1.0 / var[vari++];
+                        double information = 1.0 / sqrt(var[vari++]);
                         int sys = satsys(obs[j].sat, NULL);
                         myOptimization.addEdgeSatPrior(measurement, information, sys);
                     }
@@ -498,6 +502,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 
                 static int cntEnd = 0;
                 if(cntEnd++ > 10000) {
+                    
                     // myOptimization.optimizeAll();
                     // exit(0);
                 }
@@ -754,6 +759,10 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     /* estimate receiver velocity with Doppler */
     if (stat) {
         estvel(obs,n,rs,dts,nav,&opt_,sol,azel_,vsat);
+        int week;
+        double tow = time2gpst(sol->time, &week);
+        std::array<double,3> vel; vel[0] = sol->rr[3]; vel[1] = sol->rr[4]; vel[2] = sol->rr[5]; 
+        myOptimization.addVelToLastOptimResult(vel, tow);
     }
     if (azel) {
         for (i=0;i<n*2;i++) azel[i]=azel_[i];

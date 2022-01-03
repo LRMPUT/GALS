@@ -32,6 +32,7 @@ G2O_USE_OPTIMIZATION_LIBRARY(dense);
 class LaserPose
 {
     friend class MyOptimization;
+    public:
     LaserPose(Eigen::Affine3d pose_, int week_, double tow_)
     {
         pose = pose_;
@@ -60,17 +61,21 @@ class OptimizationResults
         }
         week = week_;
         tow = tow_;
+        velocity[0] = velocity[1] = velocity[2] = 0;
     }
     Eigen::Matrix4d getEstimatedRoverPose() { return estimatedRoverPose; }
     std::array<double,5> getEstimatedBiasValue() { return estimatedBiasValue; }
     double getTow() {return tow;}
     int getWeek() {return week;}
     int getRoverVertexId() { return roverVertexId; }
+    void setVelocity(std::array<double,3> vel) { velocity = vel; }
+    std::array<double,3> getVelocity() {return velocity; }
     private:
     int roverVertexId;
     Eigen::Matrix4d estimatedRoverPose;
     std::array<int,5> biasVertexId;
     std::array<double,5> estimatedBiasValue;
+    std::array<double,3> velocity;
     // Instead of timestamp
     int week;
     double tow;
@@ -91,6 +96,7 @@ class MyOptimization
     void processOutput(int, double);
     void saveOutputToFile(std::string filename, Eigen::Matrix4d pose, int week, double tow);
     bool readLaserData(std::string);
+    void addVelToLastOptimResult(std::array <double,3> vel, double tow);
 
     private:
 

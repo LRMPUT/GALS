@@ -118,11 +118,18 @@ void MyOptimization::optimize()
 
 void MyOptimization::optimizeAll()
 {
+    // Set all vertices as fixed
+    for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it){
+      g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(it->second);
+      v->setFixed(true);
+    }
+
     for (int i=0; i < optimizationResults.size(); i++)
       optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
 
     std::cout << "Starting whole optimization" << std::endl;
     optimizer.initializeOptimization(-1);
+     std::cout << "Initalized" << std::endl;
     optimizer.optimize(30);
     std::cout << "Ended whole optimization" << std::endl;
 
@@ -177,6 +184,7 @@ void MyOptimization::saveOutputToFile(std::string filename, Eigen::Matrix4d pose
 
 bool MyOptimization::readLaserData(std::string filename)
 {
+  double timeOffset = 3.0;
   std::ifstream fileIn;
   bool ok = false;
   fileIn.open(filename);
@@ -190,7 +198,7 @@ bool MyOptimization::readLaserData(std::string filename)
       Eigen::Affine3d af;
       af.linear() = quat.toRotationMatrix();
       af.translation() = vect;
-      LaserPose laserPose(af, week, tow);
+      LaserPose laserPose(af, week, tow + timeOffset);
       laserPoses.push_back(laserPose);
   }
   fileIn.close();
@@ -201,6 +209,7 @@ bool MyOptimization::readLaserData(std::string filename)
 
 void MyOptimization::addLaserEdge(int week, double tow)
 {
+ 
   // Check if previous poses exists
   if (optimizationResults.size() < 1)
     return;
@@ -249,37 +258,71 @@ void MyOptimization::addLaserEdge(int week, double tow)
   std::cout << "Matched laser pose:  " << matchedLaserPose << std::endl; 
 
   Eigen::Affine3d prevLaserPose =  laserPoses[lastLaserIdx].getPose();
+  Eigen::Affine3d prevPlus1LaserPose =  laserPoses[lastLaserIdx+1].getPose();
   Eigen::Affine3d actLaserPose =  laserPoses[matchedLaserPose].getPose();
   
-  lastLaserIdx = matchedLaserPose;
 
   // Calculate pose increment
   // ToDo: what coordinate frame?
   // ToDo: estimate direction vector based on GPS speed
-  Eigen::Affine3d delta = prevLaserPose.inverse() * actLaserPose;
+
+  // Calculate vector of laser translation to allign it with velocity
+  Eigen::Vector3d laserVect = (prevLaserPose.inverse() * prevPlus1LaserPose).translation();
+  std::array<double,3> vel = prevGPSPos.getVelocity();
+  Eigen::Vector3d velVect = Eigen::Vector3d(vel[0], vel[1], vel[2]);
+  static Eigen::Vector3d lastVelVect = Eigen::Vector3d(vel[0], vel[1], vel[2]);
+  if(velVect.norm() < 1.0)
+      velVect = lastVelVect;
+
+  lastVelVect = velVect;
+  Eigen::Vector3d laserVectNorm = laserVect.normalized(); 
+  velVect.normalize();
+  Eigen::Vector3d v = laserVectNorm.cross(velVect);
+  double c = laserVectNorm.dot(velVect);
+  double h = 1 / (1 + c);
+  Eigen::Matrix3d mat;
+  mat << 0, -v[2], v[1],
+          v[2], 0, -v[0],
+          -v[1], v[0], 0;
+  Eigen::Matrix3d rot = Eigen::Matrix3d::Identity() + mat + (mat * mat * h);
+  // Eigen::Vector3d alignedLaser = rot * laserVect;
+  
+  // Align first part of transform - if matchedLaserPose - lastLaserIdx == 1 then it's all   
+  Eigen::Affine3d delta = rot *prevLaserPose.inverse() * prevPlus1LaserPose;
+  // However If (matchedLaserPose - lastLaserIdx > 1) then add delta:
+  if (matchedLaserPose - lastLaserIdx > 1){
+    delta = delta * prevPlus1LaserPose.inverse() * actLaserPose;
+    std::cout << "Diff:  "  << matchedLaserPose - lastLaserIdx << "   Transform:   "   << delta.translation().transpose() << std::endl;
+  }
+  lastLaserIdx = matchedLaserPose;
+
+  // Eigen::Affine3d delta = prevLaserPose.inverse() * actLaserPose;
   
   // Set previous vertex as fixed, so its not optimized
   optimizer.vertex(prevGPSPos.getRoverVertexId())->setFixed(true);
 
-  // // Add SE3 edge between GPS vertices
-  // g2o::EdgeSE3 *edgeLaser = new g2o::EdgeSE3;
+  // Add SE3 edge between GPS vertices
+  g2o::EdgeSE3 *edgeLaser = new g2o::EdgeSE3;
 
-  // g2o::Isometry3 estimate = g2o::Isometry3::Identity();
-  // Eigen::Matrix4d tmp = prevGPSPos.getEstimatedRoverPose() * delta.matrix();
-  // estimate.matrix() = tmp;
-  // // estimate.translation() = est.translation()*0.5;
-  // g2o::VertexSE3 *ve3 = dynamic_cast<g2o::VertexSE3 *> (optimizer.vertex(lastVertexId - numBiases));
-  // ve3->setEstimate(estimate);
+  g2o::Isometry3 estimate = g2o::Isometry3::Identity();
+  // Remove rotation
+  // delta.matrix().block<3,3>(0,0) = Eigen::Matrix3d::Identity();
+  // Eigen::Matrix4d tmp = delta.matrix() * prevGPSPos.getEstimatedRoverPose();
+  estimate.matrix() = prevGPSPos.getEstimatedRoverPose();
+  estimate.translate(delta.translation());
+  // estimate.translation() = estimate.translation()*2.5;
+  g2o::VertexSE3 *ve3 = dynamic_cast<g2o::VertexSE3 *> (optimizer.vertex(lastVertexId - numBiases));
+  ve3->setEstimate(estimate);
 
   // edgeLaser->setVertex(0, dynamic_cast<g2o::VertexSE3 *>(optimizer.vertex(prevGPSPos.getRoverVertexId())));
   // edgeLaser->setVertex(1, dynamic_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases)));
 
   // // Add measurement
   // g2o::Isometry3 measurement = g2o::Isometry3::Identity();
-  // measurement = delta.matrix();
-  // edgeLaser->setMeasurement(measurement);
+  // measurement = prevGPSPos.getEstimatedRoverPose().inverse() * estimate.matrix();//delta.matrix();
+  // // edgeLaser->setMeasurement(measurement);
   // // Add information matrix
-  // g2o::MatrixN<6> information = g2o::MatrixN<6>::Identity();
+  // g2o::MatrixN<6> information = 1*g2o::MatrixN<6>::Identity();
   // edgeLaser->setInformation(information);
   // edgeLaser->setLevel(optLevel);
   // // Add edge to optimization
@@ -295,11 +338,23 @@ void MyOptimization::addLaserEdge(int week, double tow)
   double distance = delta.translation().norm();
   edgeDistance->setMeasurement(distance);
   // Add information matrix
-  double  information = 1.0;
-  edgeDistance->setInformation(information);
+  double  information2 = 1.0;
+  edgeDistance->setInformation(information2);
   edgeDistance->setLevel(optLevel);
   // Add edge to optimization
   optimizer.addEdge(edgeDistance); 
+}
+
+void MyOptimization::addVelToLastOptimResult(std::array <double,3> vel, double tow)
+{
+  OptimizationResults & last = optimizationResults.back();
+  //Should be exactly the same
+  if( abs(last.getTow() - tow) < 0.05)
+    last.setVelocity(vel);
+  else{
+    // std::cout << std::setprecision(15) <<  "Tow: "  << last.getTow() << "   vs   " << tow << std::endl;
+    // exit(0);
+  }
 }
 
 void addLaserVertex()
