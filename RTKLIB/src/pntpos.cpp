@@ -30,6 +30,7 @@
 #include <iostream>
 #include "myOptimization.h"
 #include <ros/ros.h>
+#include <ros/package.h>
 
 /* constants/macros ----------------------------------------------------------*/
 
@@ -469,7 +470,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 
                 if (initalize) {
                     initalize = false;
-                    if (!myOptimization.readLaserData("/home/kcwian/Workspace/catkin_gnss_2/src/raw_gnss_rtklib/evaluation/results/aft_mapped_to_init_trajectory_gps_time.txt"))
+                    if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/Tokyo/Odaiba/aft_mapped_to_init_trajectory_gps_time.txt"))
                         std::cout << "Can't read laser file" << std::endl;
                     myOptimization.addRoverVertex(libPoseMat);
                 }
@@ -510,7 +511,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 lastEstBiases = myOptimization.getLastBiasesValue();
                 
                 static int cntEnd = 0;
-                if(cntEnd++ > 1120000) {
+                if(cntEnd++ > 10000) {
                     
                     myOptimization.optimizeAll();
                     exit(0);
