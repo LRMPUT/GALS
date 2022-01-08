@@ -27,6 +27,8 @@
 #include "BiasVertex.h"
 #include "DistanceEdge.h"
 
+#include <ros/ros.h>
+#include <ros/package.h>
 
 G2O_USE_TYPE_GROUP(slam2d);
 G2O_USE_TYPE_GROUP(slam3d);

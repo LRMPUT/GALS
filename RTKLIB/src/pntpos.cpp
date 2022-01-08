@@ -29,8 +29,6 @@
 #include <Eigen/Geometry>
 #include <iostream>
 #include "myOptimization.h"
-#include <ros/ros.h>
-#include <ros/package.h>
 
 /* constants/macros ----------------------------------------------------------*/
 

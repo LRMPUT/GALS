@@ -199,12 +199,12 @@ void MyOptimization::optimizeAll()
     // optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
   }
     std::cout << "Starting whole optimization" << std::endl;
-    bool ok = optimizer.initializeOptimization(99999);
-    // optimizer.computeInitialGuess();
-    if(ok)
-      std::cout << "Initalized" << std::endl;
-     else
-       std::cout << "Problem with initalization" << std::endl;
+   // bool ok = optimizer.initializeOptimization(99999);
+    // // optimizer.computeInitialGuess();
+    // if(ok)
+    //   std::cout << "Initalized" << std::endl;
+    //  else
+    //    std::cout << "Problem with initalization" << std::endl;
 
    // optimizer.optimize(5);
     std::cout << "Ended whole optimization" << std::endl;
@@ -249,15 +249,16 @@ void MyOptimization::saveOutputToFile(std::string filename, Eigen::Matrix4d pose
 {
   std::ofstream fileOut;
   static bool initalizeFile = true;
+  std::string folderPath = ros::package::getPath("raw_gnss_rtklib") + "/evaluation/g2o_output/";
   if (initalizeFile)
   {
-    remove("g2o_sol.txt");
-    remove("g2o_sol_all.txt");
+    remove((folderPath + "g2o_sol.txt").c_str());
+    remove((folderPath + "g2o_sol_all.txt").c_str());
     // fileOut.open(filename);
     // fileOut.close();
     initalizeFile = false;
   }
-  fileOut.open(filename, std::ios_base::app);
+  fileOut.open(folderPath + filename, std::ios_base::app);
   Eigen::Quaterniond quat(pose.block<3,3>(0,0));
   fileOut << std::setprecision(15) << week << "," << tow << "," << pose(0, 3) << "," << pose(1, 3) << "," << pose(2, 3) << ","
                           << quat.x() << "," << quat.y() << "," << quat.z() << "," << quat.w() << std::endl;
