@@ -16,7 +16,9 @@
 #include "g2o/core/factory.h"
 #include "g2o/types/slam3d/vertex_se3.h"
 #include "g2o/types/slam3d/edge_se3.h"
-#include "g2o/types/slam3d/GPSEdge.h"
+// #include "g2o/types/slam3d/GPSEdge.h"
+#include "g2o/types/slam3d/edge_se3_xyzprior.h"
+#include "g2o/types/slam3d/edge_se3_prior.h"
 #include "g2o/core/sparse_optimizer_terminate_action.h"
 #include "../RTKLIB/src/rtklib.h"
 
@@ -24,6 +26,7 @@
 #include "GPSEdgePrior.h"
 #include "BiasVertex.h"
 #include "DistanceEdge.h"
+
 
 G2O_USE_TYPE_GROUP(slam2d);
 G2O_USE_TYPE_GROUP(slam3d);
@@ -85,11 +88,11 @@ class MyOptimization
 {
     public:
     MyOptimization( bool verbose, int iter);
-    void addRoverVertex(const Eigen::Vector3d &est);
+    void addRoverVertex(const Eigen::Matrix4d &est);
     void addBiasesVertices(const std::array<double,5> &est);
     void addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, double information, int sys);
-    void addLaserEdge(int, double);
-    Eigen::Vector3d getLastRoverPose();
+    void addLaserEdge(int, double, Eigen::Vector3d);
+    Eigen::Matrix4d getLastRoverPose();
     std::array<double,5> getLastBiasesValue();
     void optimize();
     void optimizeAll();
@@ -105,10 +108,12 @@ class MyOptimization
     int maxIterations;
     int optLevel;   // Each new rover vertex starts new level
     int numBiases;
-    Eigen::Vector3d lastRoverPose;
+    Eigen::Matrix4d lastRoverPose;
     std::array<double,5> lastBiasesValue;
     std::vector<OptimizationResults> optimizationResults;
     std::vector<LaserPose> laserPoses;
+    int firstPoseWithLaserEdgeId;
+    std::vector<g2o::EdgeSE3*> laserEdgesList;
 };
 
 #endif

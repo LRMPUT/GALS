@@ -29,6 +29,7 @@
 #include <Eigen/Geometry>
 #include <iostream>
 #include "myOptimization.h"
+#include <ros/ros.h>
 
 /* constants/macros ----------------------------------------------------------*/
 
@@ -399,8 +400,14 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 
     for (i=0;i<8;i++) x[i]=0;
 
+    static int cntt=0;
+    // if(cntt++ < 800)
+    //     return 0;
+
     // static MyOptimization myOptimization(false, 100);
-    static Eigen::Vector3d lastEstPose = Eigen::Vector3d::Zero();
+    if (!ros::ok())
+        exit(0);
+    static Eigen::Matrix4d lastEstPose = Eigen::Matrix4d::Identity();
     static std::array<double, 5> lastEstBiases = {0, 0, 0, 0, 0};
 
     for (i=0;i<MAXITR;i++) {
@@ -446,8 +453,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             if ((stat=valsol(azel,vsat,n,opt,v,nv,NX,msg))) {
                 sol->stat=opt->sateph==EPHOPT_SBAS?SOLQ_SBAS:SOLQ_SINGLE;
             }
-
-            if (stat)
+            static int decimate = 0;
+            if (stat) // && (decimate++ % 5 == 0))
             {
 
     // --------------------- g2o part start -----------------------------------
@@ -457,12 +464,14 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 // Add vertex pose to be found
                 // Estimate with last pose or / RTKLIB output ?
                 Eigen::Vector3d libPose(sol->rr[0],sol->rr[1],sol->rr[2]);
+                Eigen::Matrix4d libPoseMat = Eigen::Matrix4d::Identity();
+                libPoseMat.block<3,1>(0,3) = libPose;
                 
                 if (initalize) {
                     initalize = false;
                     if (!myOptimization.readLaserData("/home/kcwian/Workspace/catkin_gnss_2/src/raw_gnss_rtklib/evaluation/results/aft_mapped_to_init_trajectory_gps_time.txt"))
                         std::cout << "Can't read laser file" << std::endl;
-                    myOptimization.addRoverVertex(libPose);
+                    myOptimization.addRoverVertex(libPoseMat);
                 }
                 else{
                     // TODO: Check if laser and GPS estimate gives similar pose
@@ -494,17 +503,17 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 int week;
                 double tow = time2gpst(sol->time, &week);
                 // Add laser constraints
-                myOptimization.addLaserEdge(week, tow);
+                myOptimization.addLaserEdge(week, tow, libPose);
                 myOptimization.optimize();
                 myOptimization.processOutput(week, tow);
                 lastEstPose = myOptimization.getLastRoverPose();
                 lastEstBiases = myOptimization.getLastBiasesValue();
                 
                 static int cntEnd = 0;
-                if(cntEnd++ > 10000) {
+                if(cntEnd++ > 1120000) {
                     
-                    // myOptimization.optimizeAll();
-                    // exit(0);
+                    myOptimization.optimizeAll();
+                    exit(0);
                 }
 
     // --------------------- g2o part end -----------------------------------
@@ -517,7 +526,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 // myOptimization.addRoverVertex(lastEstPose);
                 // // Add bias vertices anyway, so number of biases for each pose is constant
                 // myOptimization.addBiasesVertices(lastEstBiases);
-                // myOptimization.addLaserEdge(week, tow);
+                // myOptimization.addLaserEdge(week, tow, Eigen::Vector3d());
                 // myOptimization.optimize();
                 // myOptimization.processOutput(week, tow);
                 // lastEstPose = myOptimization.getLastRoverPose();
@@ -694,7 +703,7 @@ static void estvel(const obsd_t *obs, int n, const double *rs, const double *dts
         if (lsq(H,v,4,nv,dx,Q)) break;
         
         for (j=0;j<4;j++) x[j]+=dx[j];
-        
+
         if (norm(dx,4)<1E-6) {
             matcpy(sol->rr+3,x,3,1);
             sol->qv[0]=(float)Q[0];  /* xx */

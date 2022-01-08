@@ -243,9 +243,9 @@ static int inputobs(obsd_t *obs, int solq, const prcopt_t *popt)
     
     if (0<=iobsu&&iobsu<obss.n) {
         settime((time=obss.data[iobsu].time));
-        if (checkbrk("processing : %s Q=%d",time_str(time,0),solq)) {
-            aborts=1; showmsg("aborted"); return -1;
-        }
+        // if (checkbrk("processing : %s Q=%d",time_str(time,0),solq)) {
+            // aborts=1; showmsg("aborted"); return -1;
+        // }
     }
     if (!revs) { /* input forward data */
         if ((nu=nextobsf(&obss,&iobsu,1))<=0) return -1;
