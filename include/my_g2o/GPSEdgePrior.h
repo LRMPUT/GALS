@@ -20,8 +20,10 @@
 #include "g2o/stuff/sampler.h"
 #include "g2o/core/factory.h"
 #include "g2o/types/slam3d/vertex_se3.h"
+#include "g2o/types/slam3d/vertex_pointxyz.h"
 #include "g2o/types/slam3d/edge_se3.h"
 #include <Eigen/Core>
+#include "BiasVertex.h"
 
 #define d2r (M_PI / 180.0)
 #define r2d (180.0 / M_PI)

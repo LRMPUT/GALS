@@ -10,7 +10,9 @@ Dobry wynik daje uwzglednianie krawedzi - dystansu miedzy skanami
 Przy uzyciu tylko danych z lasera estymata nie jest potrzeba - wystarczy "measurement", ale poprzedni wierzchołek musi być "fixed", wówczas optimizeAll() też od razu zwraca chi2=0
 Pozycje z GPS chyba za bardzo skaczą, wiec trzeba by odrzucać te słabe i tylko z tych dobrych estymować orientacje
 Używająć EDGESE3XYZPrior ustawiona estymata nie może zawierać rotacji, bo inaczej się nie optymalizuje do chi2=0
+Używająć tylko GPS - jeśli ustawie początkowo estymatę na tę z biblioteki, to wychodzi podobny wynik, jeśli poprzednią z g2o, to 2x gorszy RMSE
 Plan: brać tylko dobre satelity i do nich 
+Wyniki wychodziły inne niż RTKLIB, bo wierzchołki miały zbyt duże wartości i g2o się nie zbiegało
 
 
 Do sprawdzenia:

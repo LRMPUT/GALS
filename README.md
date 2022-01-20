@@ -11,3 +11,11 @@ By default RTKLIB output file is written to **./raw_gnss_rtklib/dataset/gps_solu
 # References
 * [RTKLIB](https://github.com/tomojitakasu/RTKLIB/tree/rtklib_2.4.3)
 * [GraphGNSSLib](https://github.com/weisongwen/GraphGNSSLib)
+
+# Build g2o
+- `git clone https://github.com/RainerKuemmerle/g2o.git`
+- `cd g2o && mkdir build && cd build`
+- `cmake .. -DG2O_HAVE_OPENGL=ON -DCMAKE_SKIP_RPATH=ON` (Options if something is not working)
+- `make install`
+- echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib" >> ~/.bashrc
+

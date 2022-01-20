@@ -37,6 +37,10 @@ add_library(types_slam3d ${G2O_LIB_TYPE}
   edge_pointxyz.cpp edge_pointxyz.h
   types_slam3d.cpp
   types_slam3d.h
+  # BiasVertex.cpp
+  # BiasVertex.h
+  # GPSEdgePrior.cpp
+  # GPSEdgePrior.h
   # GPSEdge.cpp
   # GPSEdge.h
 )

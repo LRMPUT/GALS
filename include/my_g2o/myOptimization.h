@@ -15,6 +15,7 @@
 #include "g2o/stuff/sampler.h"
 #include "g2o/core/factory.h"
 #include "g2o/types/slam3d/vertex_se3.h"
+#include "g2o/types/slam3d/vertex_pointxyz.h"
 #include "g2o/types/slam3d/edge_se3.h"
 // #include "g2o/types/slam3d/GPSEdge.h"
 #include "g2o/types/slam3d/edge_se3_xyzprior.h"
@@ -33,6 +34,9 @@
 G2O_USE_TYPE_GROUP(slam2d);
 G2O_USE_TYPE_GROUP(slam3d);
 G2O_USE_OPTIMIZATION_LIBRARY(dense);
+
+#define NUMBIASES 5
+
 
 class LaserPose
 {
@@ -55,12 +59,12 @@ class LaserPose
 class OptimizationResults
 {
     friend class MyOptimization;
-    OptimizationResults(int roverId, Eigen::Matrix4d estPose, std::array<double,5> lastBiases, int week_, double tow_)
+    OptimizationResults(int roverId, Eigen::Matrix4d estPose, std::array<double,NUMBIASES> lastBiases, int week_, double tow_)
     {
         roverVertexId = roverId;
         estimatedRoverPose = estPose;
 
-        for (int i = 0; i < 5; i++){
+        for (int i = 0; i < NUMBIASES; i++){
             biasVertexId[i] = roverId + i + 1;
             estimatedBiasValue[i] = lastBiases[i];
         }
@@ -69,7 +73,7 @@ class OptimizationResults
         velocity[0] = velocity[1] = velocity[2] = 0;
     }
     Eigen::Matrix4d getEstimatedRoverPose() { return estimatedRoverPose; }
-    std::array<double,5> getEstimatedBiasValue() { return estimatedBiasValue; }
+    std::array<double,NUMBIASES> getEstimatedBiasValue() { return estimatedBiasValue; }
     double getTow() {return tow;}
     int getWeek() {return week;}
     int getRoverVertexId() { return roverVertexId; }
@@ -78,8 +82,8 @@ class OptimizationResults
     private:
     int roverVertexId;
     Eigen::Matrix4d estimatedRoverPose;
-    std::array<int,5> biasVertexId;
-    std::array<double,5> estimatedBiasValue;
+    std::array<int,NUMBIASES> biasVertexId;
+    std::array<double,NUMBIASES> estimatedBiasValue;
     std::array<double,3> velocity;
     // Instead of timestamp
     int week;
@@ -91,17 +95,18 @@ class MyOptimization
     public:
     MyOptimization( bool verbose, int iter);
     void addRoverVertex(const Eigen::Matrix4d &est);
-    void addBiasesVertices(const std::array<double,5> &est);
+    void addBiasesVertices(const std::array<double,NUMBIASES> &est);
     void addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, double information, int sys);
     void addLaserEdge(int, double, Eigen::Vector3d);
     Eigen::Matrix4d getLastRoverPose();
-    std::array<double,5> getLastBiasesValue();
+    std::array<double,NUMBIASES> getLastBiasesValue();
     void optimize();
     void optimizeAll();
     void processOutput(int, double);
     void saveOutputToFile(std::string filename, Eigen::Matrix4d pose, int week, double tow);
     bool readLaserData(std::string);
     void addVelToLastOptimResult(std::array <double,3> vel, double tow);
+    void saveG2OFile();
 
     private:
 
@@ -111,11 +116,13 @@ class MyOptimization
     int optLevel;   // Each new rover vertex starts new level
     int numBiases;
     Eigen::Matrix4d lastRoverPose;
-    std::array<double,5> lastBiasesValue;
+    std::array<double,NUMBIASES> lastBiasesValue;
     std::vector<OptimizationResults> optimizationResults;
     std::vector<LaserPose> laserPoses;
     int firstPoseWithLaserEdgeId;
     std::vector<g2o::EdgeSE3*> laserEdgesList;
+    std::vector<std::vector<g2o::GPSEdgePrior*>> GPSEdgesListList;
+    std::vector<g2o::BiasVertex*> biasList;
 };
 
 #endif

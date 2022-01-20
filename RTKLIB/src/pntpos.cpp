@@ -49,7 +49,7 @@
 #define MIN_EL      (5.0*D2R)   /* min elevation for measurement error (rad) */
 
 // Global optimization, to allow for storing velocity
-static MyOptimization myOptimization(false, 100);
+static MyOptimization myOptimization(false, 30);
 
 /* pseudorange measurement error variance ------------------------------------*/
 static double varerr(const prcopt_t *opt, double el, int sys)
@@ -308,6 +308,7 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         // trace(2, "Prange: %13.3f\n", P);
         /* pseudorange residual */
         v[nv]=P-(r+dtr-CLIGHT*dts[i*2]+dion+dtrp);
+        // showmsg("v:  %13.3f", v[nv]);
         // showmsg("nv: %3d, P:%13.3f, r: %13.3f, dtr: %8f, dts: %8f, dion: %8f, dtrp: %8f", nv, P, r, dtr, -CLIGHT*dts[i*2], dion, dtrp);
         // double tmp = P -(dtr-CLIGHT*dts[i*2]+dion+dtrp);
 
@@ -462,7 +463,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 static bool initalize = true;
                 // Add vertex pose to be found
                 // Estimate with last pose or / RTKLIB output ?
-                Eigen::Vector3d libPose(sol->rr[0],sol->rr[1],sol->rr[2]);
+                Eigen::Vector3d libPose(sol->rr[0]/1e2,sol->rr[1]/1e2,sol->rr[2]/1e2);
                 Eigen::Matrix4d libPoseMat = Eigen::Matrix4d::Identity();
                 libPoseMat.block<3,1>(0,3) = libPose;
                 
@@ -470,7 +471,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                     initalize = false;
                     if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/Tokyo/Odaiba/aft_mapped_to_init_trajectory_gps_time.txt"))
                         std::cout << "Can't read laser file" << std::endl;
-                    myOptimization.addRoverVertex(libPoseMat);
+                    myOptimization.addRoverVertex(lastEstPose);
                 }
                 else{
                     // TODO: Check if laser and GPS estimate gives similar pose
@@ -481,15 +482,16 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 // for (int k=3; k < 8; k++) 
                 //     libBias.push_back(x[k]);
                 // myOptimization.addBiasesVertices(libBias);
+                std::array<double,5> libBiases{sol->dtr[0]*CLIGHT, (sol->dtr[0] + sol->dtr[1])*CLIGHT, (sol->dtr[0] + sol->dtr[2])*CLIGHT , (sol->dtr[0] +sol->dtr[3])*CLIGHT, (sol->dtr[0] + sol->dtr[4])*CLIGHT};
+                // std::cout << "LibBiases:  "  << " " << libBiases[0] << "  " << libBiases[1] << "  " << libBiases[2] << "  " << libBiases[3] << "  " << libBiases[4] << "  "  << (sol->dtr[0] + sol->dtr[5]*CLIGHT) << std::endl;
                 myOptimization.addBiasesVertices(lastEstBiases);
                 int vari = 0;
 
+                // Number of used satellites - 1 (RTKLIB adds 1 additional val to avoid rank-deficient)
                 for (int j = 0; j < n; j++)
                 {
                     if (vsat[j] == 1)
-                    {                     
-                        // showmsg("I: %2d Sat %3d  PRNG: %13.3f Var: %4.3f  Var2: %4.3f xyz: %13.3f %13.3f %13.3f", j, obs[j].sat, my_prng[j], 1/sqrt(var[vari]), var[vari], rs[j*6], rs[1+j*6],rs[2+j*6]);
-                        // showmsg("I: %2d Sat %3d ", j, obs[j].sat);
+                    {
 
                         // Add edge beteen 0-th Vertex (Receiver) and Satellite
                         Eigen::Matrix<double, 4, 1> measurement{rs[j * 6], rs[1 + j * 6], rs[2 + j * 6], my_prng[j]};
@@ -507,9 +509,9 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 myOptimization.processOutput(week, tow);
                 lastEstPose = myOptimization.getLastRoverPose();
                 lastEstBiases = myOptimization.getLastBiasesValue();
-                
                 static int cntEnd = 0;
-                if(cntEnd++ > 10000) {
+                std::cout << "Processing no. " << cntEnd << std::endl;
+                if(cntEnd++ > 1000) {
                     
                     myOptimization.optimizeAll();
                     exit(0);

@@ -14,11 +14,13 @@ namespace g2o
 
   bool BiasVertex::read(std::istream &is)
   {
+    is >> _estimate[0];
     return true;
   }
 
   bool BiasVertex::write(std::ostream &os) const
   {
+    os << std::setprecision(15) << estimate()(0);
     return true;
   }
 } // end namespace

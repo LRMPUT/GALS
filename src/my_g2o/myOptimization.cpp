@@ -26,7 +26,7 @@
 
 #include "myOptimization.h"
 
-MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(5), lastVertexId(-1), optLevel(0)
+MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(NUMBIASES), lastVertexId(-1), optLevel(0), GPSEdgesListList(12000)
 {
 
     // std::vector<g2o::VertexSE3*> vertices;
@@ -42,7 +42,7 @@ MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(5), lastVerte
     optimizer.setAlgorithm(g2o::OptimizationAlgorithmFactory::instance()->construct("lm_dense", solverProperty)); // GN - can start from (0,0),  LM - must have inital estimate, but works better
 
     lastRoverPose = Eigen::Matrix4d::Identity();
-    for (int i =0;i<numBiases;i++)
+    for (int i = 0; i < numBiases; i++)
       lastBiasesValue[i] = 0;
 
     maxIterations = iter;
@@ -63,7 +63,7 @@ void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
     optimizer.addVertex(vertex);
 }
 
-void MyOptimization::addBiasesVertices(const std::array<double,5> &est)
+void MyOptimization::addBiasesVertices(const std::array<double,NUMBIASES> &est)
 {
   if (est.size() != numBiases)
     std::cout << "Invalid size of bias vector";
@@ -77,6 +77,7 @@ void MyOptimization::addBiasesVertices(const std::array<double,5> &est)
     // bv->setFixed(true);
     bv->setEstimate(estMat);
     optimizer.addVertex(bv);
+    biasList.push_back(bv);
   }
 }
 
@@ -90,7 +91,8 @@ void MyOptimization::addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, d
   else if (sys==SYS_GLO) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-3)));}
   else if (sys==SYS_GAL) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-2)));}
   else if (sys==SYS_CMP) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-1)));} 
-  else if (sys==SYS_QZS) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId)));}
+  // Again GPS Vertex for QZS
+  else if (sys==SYS_QZS) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-4)));}
   // edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[0]));
   edgeSatPrior->setInformation(information);
   // edgeSat->setMeasurement(my_prng[j]);
@@ -100,6 +102,8 @@ void MyOptimization::addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, d
   edgeSatPrior->setLevel(optLevel);
   // optimizer.addVertex(vertexSat);
   optimizer.addEdge(edgeSatPrior);
+  int idx = lastVertexId / (numBiases + 1) ;
+  GPSEdgesListList.at(idx).push_back(edgeSatPrior);
 }
 
 Eigen::Matrix4d MyOptimization::getLastRoverPose()
@@ -107,7 +111,7 @@ Eigen::Matrix4d MyOptimization::getLastRoverPose()
   return lastRoverPose;
 }
 
-std::array<double,5> MyOptimization::getLastBiasesValue()
+std::array<double,NUMBIASES> MyOptimization::getLastBiasesValue()
 {
   return lastBiasesValue;
 }
@@ -115,108 +119,107 @@ std::array<double,5> MyOptimization::getLastBiasesValue()
 void MyOptimization::optimize()
 {
   optimizer.setVerbose(false);
-  int windowSize = 50;
-  int i;
-  for (i = laserEdgesList.size() - 1; i > (laserEdgesList.size() - 1 - windowSize) && i > 1; i--)
-  {
+  int windowSize = 20;
+
+  // Set all laser edges in window for optimization
+  for (int i = laserEdgesList.size() - 1; i > (laserEdgesList.size() - 1 - windowSize) && i >= 0; i--)
     laserEdgesList.at(i)->setLevel(optLevel);
-  }
 
+  // Set all GPS constraints in window for optimization
+  for (int i = optimizationResults.size() - 1; i > (optimizationResults.size() - 1 - windowSize) && i >= 0; i--)
+    for (int j = 0; j < GPSEdgesListList[i].size(); j++)
+      (GPSEdgesListList[i]).at(j)->setLevel(optLevel);
+
+  // Optimize biases again? - only if the are setFixed(true)
+  // for (int i = biasList.size() - 1; i > (biasList.size() - 1 - numBiases * windowSize) && i >= 0; i--)
+  //   biasList.at(i)->setFixed(false);
   
-  // (optimizer.vertex(lastVertexId - numBiases))->setFixed(false);
-
-  // for (int i = optimizationResults.size() - 1; i > (optimizationResults.size() - 1 - windowSize) && i > firstPoseWithLaserEdgeId +1; i--)
-  // {
+  // Set pose vertices in window for optimization - not necessary if vertices are not setFixed(true)
+  // for (int i = optimizationResults.size() - 1; i > (optimizationResults.size() - 1 - windowSize) && i >= 0; i--)
   //   optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
-  // }
-  int fixedV = -1;
-  if (optimizationResults.size() < windowSize)
-  {
-    if (optimizationResults.size() != 0)
-    {
-      (optimizer.vertex(optimizationResults[0].getRoverVertexId()))->setFixed(true);
-      fixedV = 0;
-    }
-  }
-  else
-  {
-    fixedV = optimizationResults.size() - windowSize;
-     optimizer.vertex(optimizationResults[optimizationResults.size() - windowSize].getRoverVertexId())->setFixed(true);
-  }
 
-  std::cout << "LaserEdges used - from last to " << i <<   "  Fixed vertex : " << fixedV << std::endl;
+  // Setting vertex out of window as fixed - not necessary
+  // int fixedV = optimizationResults.size() - windowSize;
+  // if (fixedV < 0)
+  //   fixedV = 0;
+  // // if (optimizationResults.size() != 0)
+  // //   optimizer.vertex(optimizationResults[fixedV].getRoverVertexId())->setFixed(true);
+
+  // std::cout << "LaserEdges used - from last to " << i <<   "  Fixed vertex : " << fixedV << std::endl;
   optimizer.initializeOptimization(optLevel++);
   optimizer.optimize(maxIterations);
-  static int cnt = 0;
-  // if(cnt++ % 200 == 0)
-  //   {
-  //     optimizer.setVerbose(true);
-  //        std::cout << "Calling" << std::endl;
-  //        for (int i = firstPoseWithLaserEdgeId + 1; i < optimizationResults.size(); i++)
-  //         {
-  //           g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(optimizationResults[i].getRoverVertexId()));
-  //           v->setFixed(false);
-  //         }
-  //        optimizer.initializeOptimization(99999);
-  //        optimizer.optimize(10);
-  //   }
+
+  // Set biases as fixed after optimization - reduces computation time, but might give worse results
+  // for (int i=0; i < numBiases; i++)
+  //   optimizer.vertex(lastVertexId-i)->setFixed(true);
+
   optimizer.setVerbose(false);
+}
+
+void MyOptimization::saveG2OFile()
+{
+  std::ofstream fout;
+  fout.open(ros::package::getPath("raw_gnss_rtklib") + "/evaluation/g2o_output/optim.g2o");
+
+  // Wrong 
+  for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
+  {
+    g2o::VertexPointXYZ *v = static_cast<g2o::VertexPointXYZ *>(it->second);
+    std::string vertexTag = g2o::Factory::instance()->tag(v);
+    fout << vertexTag << " " << v->id() << " ";
+    v->write(fout);
+    fout << std::endl;
+    if (v->fixed())
+      fout << "FIX " << v->id() << std::endl;
+  }
+  // Wrong
+  for (auto it = optimizer.edges().begin(); it != optimizer.edges().end(); ++it)
+  {
+    g2o::GPSEdgePrior *e = dynamic_cast<g2o::GPSEdgePrior *>(*it);
+    std::string edgeTag = g2o::Factory::instance()->tag(e);
+    g2o::VertexPointXYZ *from = static_cast<g2o::VertexPointXYZ *>(e->vertex(0));
+    g2o::BiasVertex *to = static_cast<g2o::BiasVertex *>(e->vertex(1));
+    fout << edgeTag << " " << from->id() << " " << to->id() << " ";
+    e->write(fout);
+    fout << std::endl;
+  }
 }
 
 void MyOptimization::optimizeAll()
 {
   optimizer.setVerbose(true);
 
-  // Set all vertices as fixed
   for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
-  {
-    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(it->second);
-   v->setFixed(true);
-  }
+    (dynamic_cast<g2o::OptimizableGraph::Vertex *>(it->second))->setFixed(false);
 
-  // firstPoseWithLaserEdgeId is fixed
-  for (int i = firstPoseWithLaserEdgeId + 1; i < optimizationResults.size(); i++)
-  {
-    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(optimizationResults[i].getRoverVertexId()));
-    v->setFixed(false);
-    // g2o::Isometry3 est = g2o::Isometry3::Identity();
-    // est.matrix() = optimizationResults[i].getEstimatedRoverPose();
-    // g2o::Isometry3 est2 = v->estimate();
-    // v->setEstimate(est);
+  // firstPoseWithLaserEdgeId is not fixed, as its orientation should be estimated
+  for (int i = firstPoseWithLaserEdgeId; i < optimizationResults.size(); i++)
+    optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
 
-  // if( i == firstPoseWithLaserEdgeId)
-  // {
-  //       std::cout << std::setprecision(15) << std::endl << "New:  " << std::endl  << est.matrix()  << "   vs "  << std::endl  << est2.matrix() << std::endl;
+  // Set all laser edges for optimization
+  for (int i = 0; i < laserEdgesList.size(); i++)
+    laserEdgesList.at(i)->setLevel(optLevel);
 
-  //   g2o::VertexSE3 *v2 = static_cast<g2o::VertexSE3 *>(optimizer.vertex(optimizationResults[i-1].getRoverVertexId()));
-  //   g2o::Isometry3 est2 = g2o::Isometry3::Identity();
-  //   est2.matrix() = optimizationResults[i-1].getEstimatedRoverPose();
-  //   g2o::Isometry3 est3 = v2->estimate();
-  //   // v->setEstimate(est);
+  for (int i = optimizationResults.size() - 1; i >= firstPoseWithLaserEdgeId; i--)
+     for (int j=0; j < GPSEdgesListList[i].size(); j++)
+      (GPSEdgesListList[i]).at(j)->setLevel(optLevel);
 
-  //   std::cout << std::setprecision(15) << "Prev  "  << std::endl << est2.matrix()  << "   vs " << std::endl    << est3.matrix() << std::endl;
-  // }
-    // optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
-  }
     std::cout << "Starting whole optimization" << std::endl;
-   // bool ok = optimizer.initializeOptimization(99999);
-    // // optimizer.computeInitialGuess();
-    // if(ok)
-    //   std::cout << "Initalized" << std::endl;
-    //  else
-    //    std::cout << "Problem with initalization" << std::endl;
-
-   // optimizer.optimize(5);
+   bool ok = optimizer.initializeOptimization(optLevel);
+    if(ok)
+      std::cout << "Initalized" << std::endl;
+    else
+      std::cout << "Problem with initalization" << std::endl;
+      
+    optimizer.optimize(10);
     std::cout << "Ended whole optimization" << std::endl;
 
-    for (int j=0, i = firstPoseWithLaserEdgeId +1; i < optimizationResults.size(); i++,j++)
+    // for (int j=0, i = firstPoseWithLaserEdgeId +1; i < optimizationResults.size(); i++,j++)
+    for (int i = 0; i < optimizationResults.size(); i++)
     {
       g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(optimizationResults[i].getRoverVertexId()));
-      // g2o::ParameterSE3Offset *p = static_cast<g2o::ParameterSE3Offset *>(optimizer.parameter(j));
-      // std::cout << i << " " << p->offset().matrix() << std::endl;
       saveOutputToFile("g2o_sol_all.txt", v->estimate().matrix(), optimizationResults[i].getWeek(), optimizationResults[i].getTow());
     }
-
 }
 
 void MyOptimization::processOutput(int week, double tow)
@@ -228,9 +231,8 @@ void MyOptimization::processOutput(int week, double tow)
   g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases));
   Eigen::Matrix4d estPose = v->estimate().matrix();
   lastRoverPose = estPose;
-
   // Estimated biases
-  for (int i = 1; i < 6; i++)
+  for (int i = 1; i < 1 + numBiases; i++)
   {
     g2o::BiasVertex *bv = static_cast<g2o::BiasVertex *>(optimizer.vertex(lastVertexId - numBiases + i));
     lastBiasesValue[i-1] = bv->estimate()[0];
@@ -241,7 +243,7 @@ void MyOptimization::processOutput(int week, double tow)
   optimizationResults.push_back(optimResult);
   // Save results to file
   // Skip first pose, as it has no proper estimate etc
-  if(firstPoseWithLaserEdgeId != -1)
+  // if(firstPoseWithLaserEdgeId != -1)
     saveOutputToFile("g2o_sol.txt", estPose, week, tow);
 }
 
@@ -260,7 +262,7 @@ void MyOptimization::saveOutputToFile(std::string filename, Eigen::Matrix4d pose
   }
   fileOut.open(folderPath + filename, std::ios_base::app);
   Eigen::Quaterniond quat(pose.block<3,3>(0,0));
-  fileOut << std::setprecision(15) << week << "," << tow << "," << pose(0, 3) << "," << pose(1, 3) << "," << pose(2, 3) << ","
+  fileOut << std::setprecision(15) << week << "," << tow << "," << pose(0, 3) * 1e2 << "," << pose(1, 3) * 1e2 << "," << pose(2, 3) * 1e2 << ","
                           << quat.x() << "," << quat.y() << "," << quat.z() << "," << quat.w() << std::endl;
   fileOut.close();
 }
@@ -280,7 +282,7 @@ bool MyOptimization::readLaserData(std::string filename)
       Eigen::Vector3d vect(x,y,z);
       Eigen::Affine3d af;
       af.linear() = quat.toRotationMatrix();
-      af.translation() = vect;
+      af.translation() = vect / 1e2;
       LaserPose laserPose(af, week, tow + timeOffset);
       laserPoses.push_back(laserPose);
   }
@@ -347,7 +349,6 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   Eigen::Affine3d prevLaserPose =  laserPoses[lastLaserIdx].getPose();
   Eigen::Affine3d prevPlus1LaserPose =  laserPoses[lastLaserIdx+1].getPose();
   Eigen::Affine3d actLaserPose =  laserPoses[matchedLaserPose].getPose();
-  
 
   // Calculate pose increment
   // ToDo: what coordinate frame?
@@ -396,10 +397,10 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   // delta.matrix().block<3,3>(0,0) = Eigen::Matrix3d::Identity();
   // Eigen::Matrix4d tmp = delta.matrix() * prevGPSPos.getEstimatedRoverPose();
   Eigen::Affine3d deltaLocal = prevLaserPose.inverse() * actLaserPose;
-  estimate.matrix() = prevGPSPos.getEstimatedRoverPose();
-  estimate.translate(deltaGlobal.translation());
+  // estimate.matrix() = prevGPSPos.getEstimatedRoverPose();
+  // estimate.translate(deltaGlobal.translation());
   // estimate.matrix().block<3,3>(0,0) = Eigen::Matrix3d::Identity();
-  estimate.rotate(deltaLocal.linear());
+  // estimate.rotate(deltaLocal.linear());
   // estimate.translation() = estimate.translation()*2.5;
   g2o::VertexSE3 *ve3 = dynamic_cast<g2o::VertexSE3 *> (optimizer.vertex(lastVertexId - numBiases));
   //std::cout << ve3->estimate().matrix() <<  std::endl << prevGPSPos.getEstimatedRoverPose() << std::endl;
@@ -415,13 +416,13 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   edgeLaser->setMeasurement(measurement);
 
   // Add information matrix
-  g2o::MatrixN<6> information = 10.0 * g2o::MatrixN<6>::Identity();
+  g2o::MatrixN<6> information = 10 * g2o::MatrixN<6>::Identity();
   edgeLaser->setInformation(information);
   edgeLaser->setLevel(optLevel);
   // Add edge to optimization
   optimizer.addEdge(edgeLaser); 
   laserEdgesList.push_back(edgeLaser);
-
+  // std::cout << "Translation:  "  << measurement.translation().norm() << std::endl;
 
   // // Add DistanceEdge between GPS poses
   // g2o::DistanceEdge *edgeDistance = new g2o::DistanceEdge;

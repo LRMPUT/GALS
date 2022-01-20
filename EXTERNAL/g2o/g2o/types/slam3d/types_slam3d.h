@@ -53,5 +53,7 @@
 #include "edge_xyz_prior.h"
 
 #include "edge_se3_lotsofxyz.h"
+// #include "BiasVertex.h"
+// #include "GPSEdgePrior.h"
 // #include "GPSEdge.h"
 #endif
