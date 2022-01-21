@@ -17,7 +17,6 @@
 #include "g2o/types/slam3d/vertex_se3.h"
 #include "g2o/types/slam3d/vertex_pointxyz.h"
 #include "g2o/types/slam3d/edge_se3.h"
-// #include "g2o/types/slam3d/GPSEdge.h"
 #include "g2o/types/slam3d/edge_se3_xyzprior.h"
 #include "g2o/types/slam3d/edge_se3_prior.h"
 #include "g2o/core/sparse_optimizer_terminate_action.h"
@@ -27,6 +26,7 @@
 #include "GPSEdgePrior.h"
 #include "BiasVertex.h"
 #include "DistanceEdge.h"
+#include "myParameters.h"
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -93,7 +93,7 @@ class OptimizationResults
 class MyOptimization
 {
     public:
-    MyOptimization( bool verbose, int iter);
+    MyOptimization();
     void addRoverVertex(const Eigen::Matrix4d &est);
     void addBiasesVertices(const std::array<double,NUMBIASES> &est);
     void addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, double information, int sys);

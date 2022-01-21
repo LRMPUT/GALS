@@ -15,12 +15,19 @@
 #include <stdio.h>
 #include <assert.h>
 #include "../RTKLIB/src/rtklib.h"
-// #include "raw_gnss_rtklib/my_g2o.h"
+#include "myParameters.h"
 
 #define TRACE
 // extern void postposRegisterPub(ros::NodeHandle &n);
 // extern void rtkposRegisterPub(ros::NodeHandle &n);
 // extern void pntposRegisterPub(ros::NodeHandle &n);
+
+bool paramVerbose;
+int paramWindowSize;
+int paramMaxIterations;
+int paramMaxIterationsEnd;
+bool paramOptimizeBiasesAgain;
+bool paramOptimizeBiasesAgainEnd;
 
 int main(int argc, char **argv)
 {
@@ -41,6 +48,14 @@ int main(int argc, char **argv)
 	ros::param::get("BeiDouEmpFile", BeiDouEmpFile);
 	ros::param::get("GPSEmpFile", GPSEmpFile);
 	ros::param::get("out_folder", out_folder);
+
+	// Read optimization parameters
+	nh.param("verbose",paramVerbose, false);
+	nh.param("windowSize",paramWindowSize, 20);
+	nh.param("maxIterations",paramMaxIterations, 50);
+	nh.param("maxIterationsEnd",paramMaxIterationsEnd, 10);
+	nh.param("optimizeBiasesAgain",paramOptimizeBiasesAgain, true);
+	nh.param("optimizeBiasesAgainEnd",paramOptimizeBiasesAgainEnd, false);
 
 	/* flag for state */
     int n=0,i,stat;

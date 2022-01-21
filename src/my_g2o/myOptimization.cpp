@@ -26,18 +26,14 @@
 
 #include "myOptimization.h"
 
-MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(NUMBIASES), lastVertexId(-1), optLevel(0), GPSEdgesListList(12000)
+MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLevel(0), GPSEdgesListList(20000)
 {
-
-    // std::vector<g2o::VertexSE3*> vertices;
-    // std::vector<g2o::GPSEdge*> edges;
-    optimizer.setVerbose(verbose);
+    optimizer.setVerbose(paramVerbose);
 
     g2o::SparseOptimizerTerminateAction* terminateAction = new g2o::SparseOptimizerTerminateAction;
     terminateAction->setGainThreshold(0.0001); // 0.0000001
-    terminateAction->setMaxIterations(iter);
+    terminateAction->setMaxIterations(paramMaxIterations);
     optimizer.addPostIterationAction(terminateAction);
-    // allocate the solver
     g2o::OptimizationAlgorithmProperty solverProperty;
     optimizer.setAlgorithm(g2o::OptimizationAlgorithmFactory::instance()->construct("lm_dense", solverProperty)); // GN - can start from (0,0),  LM - must have inital estimate, but works better
 
@@ -45,9 +41,15 @@ MyOptimization::MyOptimization(bool verbose, int iter) : numBiases(NUMBIASES), l
     for (int i = 0; i < numBiases; i++)
       lastBiasesValue[i] = 0;
 
-    maxIterations = iter;
     firstPoseWithLaserEdgeId = -1;
 
+    std::cout << "Parameters: " << std::endl;
+    std::cout << "paramVerbose: " << paramVerbose << std::endl;
+    std::cout << "paramWindowSize: " << paramWindowSize << std::endl;
+    std::cout << "paramMaxIterations: " << paramMaxIterations << std::endl;
+    std::cout << "paramMaxIterationsEnd: " << paramMaxIterationsEnd << std::endl;
+    std::cout << "paramOptimizeBiasesAgain: " << paramOptimizeBiasesAgain << std::endl;
+    std::cout << "paramOptimizeBiasesAgainEnd: " << paramOptimizeBiasesAgainEnd << std::endl;
 }
 void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
 {
@@ -118,15 +120,14 @@ std::array<double,NUMBIASES> MyOptimization::getLastBiasesValue()
 
 void MyOptimization::optimize()
 {
-  optimizer.setVerbose(false);
-  int windowSize = 20;
+  int windowSize = paramWindowSize;
 
   // Set all laser edges in window for optimization
-  for (int i = laserEdgesList.size() - 1; i > (laserEdgesList.size() - 1 - windowSize) && i >= 0; i--)
+  for (int i = laserEdgesList.size() - 1; i > ((int) laserEdgesList.size() - 1 - windowSize) && i >= 0; i--)
     laserEdgesList.at(i)->setLevel(optLevel);
 
   // Set all GPS constraints in window for optimization
-  for (int i = optimizationResults.size() - 1; i > (optimizationResults.size() - 1 - windowSize) && i >= 0; i--)
+  for (int i = optimizationResults.size() - 1; i > ((int) optimizationResults.size() - 1 - windowSize) && i >= 0; i--)
     for (int j = 0; j < GPSEdgesListList[i].size(); j++)
       (GPSEdgesListList[i]).at(j)->setLevel(optLevel);
 
@@ -147,13 +148,11 @@ void MyOptimization::optimize()
 
   // std::cout << "LaserEdges used - from last to " << i <<   "  Fixed vertex : " << fixedV << std::endl;
   optimizer.initializeOptimization(optLevel++);
-  optimizer.optimize(maxIterations);
+  optimizer.optimize(paramMaxIterations);
 
   // Set biases as fixed after optimization - reduces computation time, but might give worse results
   // for (int i=0; i < numBiases; i++)
   //   optimizer.vertex(lastVertexId-i)->setFixed(true);
-
-  optimizer.setVerbose(false);
 }
 
 void MyOptimization::saveG2OFile()
@@ -211,7 +210,7 @@ void MyOptimization::optimizeAll()
     else
       std::cout << "Problem with initalization" << std::endl;
       
-    optimizer.optimize(10);
+    optimizer.optimize(paramMaxIterationsEnd);
     std::cout << "Ended whole optimization" << std::endl;
 
     // for (int j=0, i = firstPoseWithLaserEdgeId +1; i < optimizationResults.size(); i++,j++)

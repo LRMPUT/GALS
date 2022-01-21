@@ -6,14 +6,30 @@
     <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base.nav" />
     <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/results.pos" />
 
-
+    <!-- Optimization Parameters -->
+    <arg name="verbose" default="false" />
+    <arg name="windowSize" default="20" />
+    <arg name="maxIterations" default="50" />
+    <arg name="maxIterationsEnd" default="10" />
+    <arg name="optimizeBiasesAgain" default="true" />
+    <arg name="optimizeBiasesAgainEnd" default="false" />
 
     <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen">
-            <!-- GNSS positioning mode, 0: single, 1:DGPS/DGNSS, 2: kinematic -->
-        <param name="mode" type="int" value="0" />
-        <!-- number of frequency (1:L1,2:L1+L2,3:L1+L2+L5) -->
-        <param name="nf" type="int" value="2" />
-        <param name="soltype" type="int" value="0" />
+
+        <!--RTKLIB params-->
+        <param name="mode" type="int" value="0" />  <!-- GNSS positioning mode, 0: single, 1:DGPS/DGNSS, 2: kinematic -->
+        <param name="nf" type="int" value="2" />    <!-- number of frequency (1:L1,2:L1+L2,3:L1+L2+L5) -->
+        <param name="soltype" type="int" value="0" />  <!-- 0:forward,1:backward,2:combined -->
+
+
+        <!-- Optimization parameters -->
+        <param name="verbose" type="bool" value="$(arg verbose)" />
+        <param name="windowSize" type="int" value="$(arg windowSize)" />
+        <param name="maxIterations" type="int" value="$(arg maxIterations)" />
+        <param name="maxIterationsEnd" type="int" value="$(arg maxIterationsEnd)" />
+        <param name="optimizeBiasesAgain" type="bool" value="$(arg optimizeBiasesAgain)" />
+        <param name="optimizeBiasesAgainEnd" type="bool" value="$(arg optimizeBiasesAgainEnd)" />
+
     </node>
 
 </launch>
