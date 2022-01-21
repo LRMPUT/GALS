@@ -4,7 +4,7 @@
     <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base_trim23ble.obs" />
     <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base.nav" />
     <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base.nav" />
-    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/results.pos" />
+    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)evaluation/g2o_output/gps_lib.pos" />
 
     <!-- Optimization Parameters -->
     <arg name="verbose" default="false" />

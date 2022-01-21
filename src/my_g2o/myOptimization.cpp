@@ -95,14 +95,9 @@ void MyOptimization::addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, d
   else if (sys==SYS_CMP) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-1)));} 
   // Again GPS Vertex for QZS
   else if (sys==SYS_QZS) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-4)));}
-  // edgeSat->setVertex(2,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (biases[0]));
   edgeSatPrior->setInformation(information);
-  // edgeSat->setMeasurement(my_prng[j]);
-  //edges.push_back(edgeSat);
-  
   edgeSatPrior->setMeasurement(measurement);
   edgeSatPrior->setLevel(optLevel);
-  // optimizer.addVertex(vertexSat);
   optimizer.addEdge(edgeSatPrior);
   int idx = lastVertexId / (numBiases + 1) ;
   GPSEdgesListList.at(idx).push_back(edgeSatPrior);
@@ -122,11 +117,11 @@ void MyOptimization::optimize()
 {
   int windowSize = paramWindowSize;
 
-  // Set all laser edges in window for optimization
+  // Set all laser edges in window for optimization (except actual one, as it is added in addLaserEdge())
   for (int i = laserEdgesList.size() - 1; i > ((int) laserEdgesList.size() - 1 - windowSize) && i >= 0; i--)
     laserEdgesList.at(i)->setLevel(optLevel);
 
-  // Set all GPS constraints in window for optimization
+  // Set all GPS constraints in window for optimization (except actual ones, as they are added in addEdgeSatPrior() )
   for (int i = optimizationResults.size() - 1; i > ((int) optimizationResults.size() - 1 - windowSize) && i >= 0; i--)
     for (int j = 0; j < GPSEdgesListList[i].size(); j++)
       (GPSEdgesListList[i]).at(j)->setLevel(optLevel);
@@ -151,8 +146,9 @@ void MyOptimization::optimize()
   optimizer.optimize(paramMaxIterations);
 
   // Set biases as fixed after optimization - reduces computation time, but might give worse results
-  // for (int i=0; i < numBiases; i++)
-  //   optimizer.vertex(lastVertexId-i)->setFixed(true);
+  if(paramOptimizeBiasesAgain == false)
+    for (int i = 0; i < numBiases; i++)
+      optimizer.vertex(lastVertexId - i)->setFixed(true);
 }
 
 void MyOptimization::saveG2OFile()
@@ -188,10 +184,15 @@ void MyOptimization::optimizeAll()
 {
   optimizer.setVerbose(true);
 
-  for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
-    (dynamic_cast<g2o::OptimizableGraph::Vertex *>(it->second))->setFixed(false);
+  // Set poses and biases vertices for optimization
+  if (paramOptimizeBiasesAgainEnd == true)
+    for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
+      (dynamic_cast<g2o::OptimizableGraph::Vertex *>(it->second))->setFixed(false);
+  else
+    for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
+      (dynamic_cast<g2o::OptimizableGraph::Vertex *>(it->second))->setFixed(true);
 
-  // firstPoseWithLaserEdgeId is not fixed, as its orientation should be estimated
+  // Unfix poses for optimization (firstPoseWithLaserEdgeId is not fixed, as its orientation should be estimated)
   for (int i = firstPoseWithLaserEdgeId; i < optimizationResults.size(); i++)
     optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
 
