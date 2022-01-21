@@ -600,7 +600,6 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 static int cntEnd = 0;
                 std::cout << "Processing no. " << cntEnd << std::endl;
                 if(cntEnd++ > 1000) {
-                    
                     myOptimization.optimizeAll();
                     exit(0);
                 }

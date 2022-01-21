@@ -12,7 +12,7 @@
     <arg name="maxIterations" default="50" />
     <arg name="maxIterationsEnd" default="10" />
     <arg name="optimizeBiasesAgain" default="true" />
-    <arg name="optimizeBiasesAgainEnd" default="false" />
+    <arg name="optimizeBiasesAgainEnd" default="true" />
 
     <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen">
 
@@ -20,7 +20,6 @@
         <param name="mode" type="int" value="0" />  <!-- GNSS positioning mode, 0: single, 1:DGPS/DGNSS, 2: kinematic -->
         <param name="nf" type="int" value="2" />    <!-- number of frequency (1:L1,2:L1+L2,3:L1+L2+L5) -->
         <param name="soltype" type="int" value="0" />  <!-- 0:forward,1:backward,2:combined -->
-
 
         <!-- Optimization parameters -->
         <param name="verbose" type="bool" value="$(arg verbose)" />
