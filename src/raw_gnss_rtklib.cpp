@@ -28,6 +28,7 @@ int paramMaxIterations;
 int paramMaxIterationsEnd;
 bool paramOptimizeBiasesAgain;
 bool paramOptimizeBiasesAgainEnd;
+int paramLaserInform;
 
 int main(int argc, char **argv)
 {
@@ -56,6 +57,7 @@ int main(int argc, char **argv)
 	nh.param("maxIterationsEnd",paramMaxIterationsEnd, 10);
 	nh.param("optimizeBiasesAgain",paramOptimizeBiasesAgain, true);
 	nh.param("optimizeBiasesAgainEnd",paramOptimizeBiasesAgainEnd, false);
+	nh.param("laserInform", paramLaserInform, 10);
 
 	/* flag for state */
     int n=0,i,stat;

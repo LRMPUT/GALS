@@ -39,26 +39,11 @@ def runLaunch(roslaunch_file, path,  cnt, repeat, kitti_item):
 	# Run launch file
 	launch = roslaunch.scriptapi.ROSLaunch()
 	launch = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
+	time_start = timer()
 	launch.start()
 	launch.spin()
-	# Start another node - rosbag player - it allows to check when rosbag_player finishes and then kill rest of the nodes
-	# kitti_file_path = [s for s in roslaunch_args if "rosbag_path:=" in s][0]
-	# if not kitti_file_path:
-	# 	print "Test_kitti script: No valid Kitti file path"
-	# 	return
-
-	# package = 'raw_gnss_rtklib'
-	# executable = 'raw_gnss_rtklib_node'
-
-	# time_start = timer()
-	# # Arg must be with the underscore at the beginning
-	# rosbag_player_node = roslaunch.core.Node(package, executable, args="_1", output="screen", respawn=False)
-	# process = launch.launch(rosbag_player_node)
-	# while process.is_alive():
-	# 	 rospy.sleep(5)
-	# time_end = timer()
-	# execution_time = (time_end - time_start) # Time in seconds, e.g. 5.38091952400282
-	print("Stopped launch")
+	time_end = timer()
+	print("Stopping launch")
 	launch.shutdown()
 	# for i in range (10):
 	#    launch.parent.shutdown()
@@ -77,6 +62,13 @@ def runLaunch(roslaunch_file, path,  cnt, repeat, kitti_item):
 
 	subprocess.call(cmd1, shell=True)
 	subprocess.call(cmd2, shell=True)
+	subprocess.call(cmd3, shell=True)
+
+	# Total execution time
+	execution_time = (time_end - time_start) # Time in seconds
+	f = open(path_kitti_item + "_total_execution_time.txt","w+")
+	f.write("Total time: " + str(execution_time / 60) + " minutes")
+	f.close()
 
 if __name__ == '__main__':
     
@@ -120,6 +112,7 @@ if __name__ == '__main__':
                 'maxIterationsEnd:=10',
                 'optimizeBiasesAgain:=true',
                 'optimizeBiasesAgainEnd:=true',
+				'paramLaserInform:=10',
 	]
 
 	###############################################################################

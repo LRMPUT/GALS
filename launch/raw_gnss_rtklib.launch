@@ -13,6 +13,7 @@
     <arg name="maxIterationsEnd" default="10" />
     <arg name="optimizeBiasesAgain" default="true" />
     <arg name="optimizeBiasesAgainEnd" default="true" />
+    <arg name="laserInform" default="10" />
 
     <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen">
 
@@ -28,7 +29,7 @@
         <param name="maxIterationsEnd" type="int" value="$(arg maxIterationsEnd)" />
         <param name="optimizeBiasesAgain" type="bool" value="$(arg optimizeBiasesAgain)" />
         <param name="optimizeBiasesAgainEnd" type="bool" value="$(arg optimizeBiasesAgainEnd)" />
-
+        <param name="laserInform" type="int" value="$(arg laserInform)" />
     </node>
 
 </launch>

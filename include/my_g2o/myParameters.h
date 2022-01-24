@@ -7,5 +7,6 @@ extern int paramMaxIterations;
 extern int paramMaxIterationsEnd;
 extern bool paramOptimizeBiasesAgain;
 extern bool paramOptimizeBiasesAgainEnd;
+extern int paramLaserInform;
 
 #endif

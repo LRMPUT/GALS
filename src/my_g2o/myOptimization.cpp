@@ -50,6 +50,7 @@ MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLe
     std::cout << "paramMaxIterationsEnd: " << paramMaxIterationsEnd << std::endl;
     std::cout << "paramOptimizeBiasesAgain: " << paramOptimizeBiasesAgain << std::endl;
     std::cout << "paramOptimizeBiasesAgainEnd: " << paramOptimizeBiasesAgainEnd << std::endl;
+    std::cout << "paramLaserInform: " << paramLaserInform << std::endl;
 }
 void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
 {
@@ -416,7 +417,7 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   edgeLaser->setMeasurement(measurement);
 
   // Add information matrix
-  g2o::MatrixN<6> information = 10 * g2o::MatrixN<6>::Identity();
+  g2o::MatrixN<6> information = paramLaserInform * g2o::MatrixN<6>::Identity();
   edgeLaser->setInformation(information);
   edgeLaser->setLevel(optLevel);
   // Add edge to optimization
