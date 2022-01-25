@@ -112,7 +112,7 @@ if __name__ == '__main__':
                 'maxIterationsEnd:=10',
                 'optimizeBiasesAgain:=true',
                 'optimizeBiasesAgainEnd:=true',
-				'paramLaserInform:=10',
+		'laserInform:=10',
 	]
 
 	###############################################################################
