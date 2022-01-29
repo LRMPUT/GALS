@@ -98,6 +98,7 @@ class MyOptimization
     void addBiasesVertices(const std::array<double,NUMBIASES> &est);
     void addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, double information, int sys);
     void addLaserEdge(int, double, Eigen::Vector3d);
+    void filterGPS(Eigen::Vector3d libPose, double tow, int &stat);
     Eigen::Matrix4d getLastRoverPose();
     std::array<double,NUMBIASES> getLastBiasesValue();
     void optimize();

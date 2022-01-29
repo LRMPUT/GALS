@@ -93,7 +93,7 @@ void MyOptimization::addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, d
   if      (sys == SYS_GPS){edgeSatPrior->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(lastVertexId-4)));}
   else if (sys==SYS_GLO) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-3)));}
   else if (sys==SYS_GAL) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-2)));}
-  else if (sys==SYS_CMP) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-1)));} 
+  else if (sys==SYS_CMP) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-1)));}
   // Again GPS Vertex for QZS
   else if (sys==SYS_QZS) {edgeSatPrior->setVertex(1,  dynamic_cast<g2o::OptimizableGraph::Vertex *> (optimizer.vertex(lastVertexId-4)));}
   edgeSatPrior->setInformation(information);
@@ -214,13 +214,12 @@ void MyOptimization::optimizeAll()
       
     optimizer.optimize(paramMaxIterationsEnd);
     std::cout << "Ended whole optimization" << std::endl;
-
-    // for (int j=0, i = firstPoseWithLaserEdgeId +1; i < optimizationResults.size(); i++,j++)
-    for (int i = 0; i < optimizationResults.size(); i++)
-    {
-      g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(optimizationResults[i].getRoverVertexId()));
-      saveOutputToFile("g2o_sol_all.txt", v->estimate().matrix(), optimizationResults[i].getWeek(), optimizationResults[i].getTow());
-    }
+  // for (int j=0, i = firstPoseWithLaserEdgeId +1; i < optimizationResults.size(); i++,j++)
+  for (int i = 0; i < optimizationResults.size(); i++)
+  {
+    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(optimizationResults[i].getRoverVertexId()));
+    saveOutputToFile("g2o_sol_all.txt", v->estimate().matrix(), optimizationResults[i].getWeek(), optimizationResults[i].getTow());
+  }
 }
 
 void MyOptimization::processOutput(int week, double tow)
@@ -290,12 +289,12 @@ bool MyOptimization::readLaserData(std::string filename)
   fileIn.close();
   std::cout << "Read " << laserPoses.size() << " poses" << std::endl;
   return ok;
-  
+
 }
 
 void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
 {
- 
+
   // Check if previous poses exists
   if (optimizationResults.size() < 1)
     return;
@@ -345,7 +344,7 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   if (firstPoseWithLaserEdgeId == -1)
     firstPoseWithLaserEdgeId = optimizationResults.size() - 1;
 
-  std::cout << "Matched laser pose:  " << matchedLaserPose << std::endl; 
+  std::cout << "Matched laser pose:  " << matchedLaserPose << std::endl;
 
   Eigen::Affine3d prevLaserPose =  laserPoses[lastLaserIdx].getPose();
   Eigen::Affine3d prevPlus1LaserPose =  laserPoses[lastLaserIdx+1].getPose();
@@ -364,7 +363,7 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
       velVect = lastVelVect;
 
   lastVelVect = velVect;
-  Eigen::Vector3d laserVectNorm = laserVect.normalized(); 
+  Eigen::Vector3d laserVectNorm = laserVect.normalized();
   velVect.normalize();
   Eigen::Vector3d v = laserVectNorm.cross(velVect);
   double c = laserVectNorm.dot(velVect);
@@ -375,8 +374,8 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
           -v[1], v[0], 0;
   Eigen::Matrix3d rot = Eigen::Matrix3d::Identity() + mat + (mat * mat * h);
   // Eigen::Vector3d alignedLaser = rot * laserVect;
-  
-  // Align first part of transform - if matchedLaserPose - lastLaserIdx == 1 then it's all   
+
+  // Align first part of transform - if matchedLaserPose - lastLaserIdx == 1 then it's all
   Eigen::Affine3d deltaGlobal = rot *prevLaserPose.inverse() * prevPlus1LaserPose;
   // However If (matchedLaserPose - lastLaserIdx > 1) then add delta:
   if (matchedLaserPose - lastLaserIdx > 1){
@@ -386,7 +385,7 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   lastLaserIdx = matchedLaserPose;
 
   // Eigen::Affine3d delta = prevLaserPose.inverse() * actLaserPose;
-  
+
   // Set previous vertex as fixed, so its not optimized
   // optimizer.vertex(prevGPSPos.getRoverVertexId())->setFixed(true);
 
@@ -421,7 +420,7 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   edgeLaser->setInformation(information);
   edgeLaser->setLevel(optLevel);
   // Add edge to optimization
-  optimizer.addEdge(edgeLaser); 
+  optimizer.addEdge(edgeLaser);
   laserEdgesList.push_back(edgeLaser);
   // std::cout << "Translation:  "  << measurement.translation().norm() << std::endl;
 
@@ -439,7 +438,7 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   // edgeDistance->setInformation(information2);
   // edgeDistance->setLevel(optLevel);
   // Add edge to optimization
-  //optimizer.addEdge(edgeDistance); 
+  //optimizer.addEdge(edgeDistance);
 
 
   // Edge from actual Position estimated by library
@@ -457,8 +456,68 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   // optimizer.addParameter(poseOffset);
 
   // edgeXYZPrior->setParameterId(0,id++);
-  // optimizer.addEdge(edgeXYZPrior); 
+  // optimizer.addEdge(edgeXYZPrior);
 
+  // Check if laser and GPS estimate matches:
+  // Right now use libPose for this
+  // if (((estimate.translation() - libPose).norm() > 100000 * 1e-2) && laserEdgesList.size() > 5)
+  // {
+  //   // Remove GPS edges
+  //   std::cout << "Removing GPS edges" << std::endl;
+  //   int idx = lastVertexId / (numBiases + 1);
+  //   for (int i =0; i < GPSEdgesListList[idx].size(); i++)
+  //       optimizer.removeEdge(GPSEdgesListList.at(idx).at(i));
+
+  //   // Clear vector
+  //   GPSEdgesListList.at(idx).clear();
+  // }
+}
+
+void MyOptimization::filterGPS(Eigen::Vector3d libPose, double tow, int &stat)
+{
+  static double prevTow = 0;
+  static double prevAlt = 0;
+  static Eigen::Vector3d prevLibPose;
+
+  double maxSpeed = 20.0; // m/s
+  double maxAltToDst = 0.2; // Altittude change to distance ratio
+
+  // Calculate GPS Distance
+  static int rejected = 0;
+  double dstDiff = (libPose - prevLibPose).norm();
+  if (dstDiff > (tow - prevTow) * maxSpeed * 1e-2){
+    if (prevLibPose.norm() != 0 && prevTow != 0){
+      stat = 0;
+      rejected++;
+      return;
+    }
+  }
+
+  double posLLA[3];
+  double libpos[3];
+  libpos[0] = libPose[0] * 1e2;
+  libpos[1] = libPose[1] * 1e2;
+  libpos[2] = libPose[2] * 1e2;
+  ecef2pos(libpos, posLLA);
+  posLLA[2] -= geoidh(libpos);
+
+  double altDiff = abs(posLLA[2] - prevAlt);
+
+  // Check vertical velocity and vertical to total distance ratio
+  if (altDiff > (tow - prevTow) * 0.5  || altDiff / (dstDiff * 1e2) > 0.2 ){
+    if (prevAlt != 0){
+      stat = 0;
+      rejected++;
+      return;
+    }
+  }
+
+  // Save previous values
+  prevLibPose[0] = libPose[0];
+  prevLibPose[1] = libPose[1];
+  prevLibPose[2] = libPose[2];
+  prevTow = tow;
+  prevAlt = posLLA[2];
 }
 
 void MyOptimization::addVelToLastOptimResult(std::array <double,3> vel, double tow)

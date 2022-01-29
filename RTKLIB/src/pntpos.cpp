@@ -485,7 +485,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
     my_prng=mat(n+4,1);
 
-    for (i=0;i<8;i++) x[i]=0;
+    for (i = 0; i < 3; i++) x[i] = sol->rr[i];
 
     if (!ros::ok())
         exit(0);
@@ -542,7 +542,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 sol->stat=opt->sateph==EPHOPT_SBAS?SOLQ_SBAS:SOLQ_SINGLE;
             }
             static int decimate = 0;
-            if (stat) // && (decimate++ % 5 == 0))
+            if /*(stat &&*/ ((decimate++ % 5 == 0))
             {
 
     // --------------------- g2o part start -----------------------------------
@@ -575,22 +575,22 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 myOptimization.addBiasesVertices(lastEstBiases);
                 int vari = 0;
 
-                // Number of used satellites - 1 (RTKLIB adds 1 additional val to avoid rank-deficient)
-                for (int j = 0; j < n; j++)
-                {
-                    if (vsat[j] == 1)
-                    {
-
-                        // Add edge beteen 0-th Vertex (Receiver) and Satellite
-                        Eigen::Matrix<double, 4, 1> measurement{rs[j * 6], rs[1 + j * 6], rs[2 + j * 6], my_prng[j]};
-                        double information = 1.0 / sqrt(var[vari++]);
-                        int sys = satsys(obs[j].sat, NULL);
-                        myOptimization.addEdgeSatPrior(measurement, information, sys);
-                    }
-                }
-
                 int week;
                 double tow = time2gpst(sol->time, &week);
+                // Remove GPS solution if data is invalid
+                myOptimization.filterGPS(libPose, tow, stat);
+                // Number of used satellites - 1 (RTKLIB adds 1 additional val to avoid rank-deficient)
+                if (stat){
+                    for (int j = 0; j < n; j++){
+                        if (vsat[j] == 1){
+                            // Add edge beteen 0-th Vertex (Receiver) and Satellite
+                            Eigen::Matrix<double, 4, 1> measurement{rs[j * 6], rs[1 + j * 6], rs[2 + j * 6], my_prng[j]};
+                            double information = 1.0 / sqrt(var[vari++]);
+                            int sys = satsys(obs[j].sat, NULL);
+                            myOptimization.addEdgeSatPrior(measurement, information, sys);
+                        }
+                    }
+                }
                 // Add laser constraints
                 myOptimization.addLaserEdge(week, tow, libPose);
                 myOptimization.optimize();
@@ -659,10 +659,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
     
     for (i=0;i<3;i++) x[i]=sol->rr[i];
-    // showmsg("Init x:  %13f %13f %13f", sol->rr[0], sol->rr[1], sol->rr[2]);
-    static int cnt = 0;
-    if (cnt++ == 2)
-    exit(0);
+
     for (i=0;i<MAXITR;i++) {
         
         /* pseudorange residuals (m) */
