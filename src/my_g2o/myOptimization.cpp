@@ -51,6 +51,11 @@ MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLe
     std::cout << "paramOptimizeBiasesAgain: " << paramOptimizeBiasesAgain << std::endl;
     std::cout << "paramOptimizeBiasesAgainEnd: " << paramOptimizeBiasesAgainEnd << std::endl;
     std::cout << "paramLaserInform: " << paramLaserInform << std::endl;
+    std::cout << "paramFilterGPS: " << paramFilterGPS << std::endl;
+    std::cout << "paramMaxGPSSpeed: " << paramMaxGPSSpeed << std::endl;
+    std::cout << "paramMaxAltToDstPct: " << paramMaxAltToDstPct << std::endl;
+    std::cout << "paramDecimation: " << paramDecimation << std::endl;
+    std::cout << "paramPosesToProcess: " << paramPosesToProcess << std::endl;
 }
 void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
 {
@@ -130,7 +135,7 @@ void MyOptimization::optimize()
   // Optimize biases again? - only if the are setFixed(true)
   // for (int i = biasList.size() - 1; i > (biasList.size() - 1 - numBiases * windowSize) && i >= 0; i--)
   //   biasList.at(i)->setFixed(false);
-  
+
   // Set pose vertices in window for optimization - not necessary if vertices are not setFixed(true)
   // for (int i = optimizationResults.size() - 1; i > (optimizationResults.size() - 1 - windowSize) && i >= 0; i--)
   //   optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
@@ -475,12 +480,15 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
 
 void MyOptimization::filterGPS(Eigen::Vector3d libPose, double tow, int &stat)
 {
+  if (paramFilterGPS == false)
+    return;
+
   static double prevTow = 0;
   static double prevAlt = 0;
   static Eigen::Vector3d prevLibPose;
 
-  double maxSpeed = 20.0; // m/s
-  double maxAltToDst = 0.2; // Altittude change to distance ratio
+  double maxSpeed = paramMaxGPSSpeed; // m/s
+  double maxAltToDst = paramMaxAltToDstPct / 100; // Altittude change to distance ratio
 
   // Calculate GPS Distance
   static int rejected = 0;

@@ -29,6 +29,11 @@ int paramMaxIterationsEnd;
 bool paramOptimizeBiasesAgain;
 bool paramOptimizeBiasesAgainEnd;
 int paramLaserInform;
+bool paramFilterGPS;
+int paramMaxGPSSpeed;
+int paramMaxAltToDstPct;
+int paramDecimation;
+int paramPosesToProcess;
 
 int main(int argc, char **argv)
 {
@@ -58,6 +63,15 @@ int main(int argc, char **argv)
 	nh.param("optimizeBiasesAgain",paramOptimizeBiasesAgain, true);
 	nh.param("optimizeBiasesAgainEnd",paramOptimizeBiasesAgainEnd, false);
 	nh.param("laserInform", paramLaserInform, 10);
+	nh.param("filterGPS", paramFilterGPS, false);
+	nh.param("maxGPSSpeed", paramMaxGPSSpeed, 20);
+	nh.param("maxAltToDstPct", paramMaxAltToDstPct, 20);
+	nh.param("decimation", paramDecimation, 1);
+	if (!nh.param("posesToProcess", paramPosesToProcess, 1)){
+		ROS_INFO("\033[1;31m Parameter posesToProcess was not set \033[0m");
+		return 0;
+	}
+
 
 	/* flag for state */
     int n=0,i,stat;

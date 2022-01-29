@@ -490,16 +490,18 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     if (!ros::ok())
         exit(0);
 
-    static int cntt=0;
-    // if(cntt++ < 800)
-    //     return 0;
+    static int cntEnd = 1;
+    if (cntEnd++ >= paramPosesToProcess){
+        std::cout << "Reached poses processing limit" << std::endl;
+        myOptimization.optimizeAll();
+        exit(0);
+    }
     
     // static MyOptimization myOptimization;
     static Eigen::Matrix4d lastEstPose = Eigen::Matrix4d::Identity();
     static std::array<double, 5> lastEstBiases = {0, 0, 0, 0, 0};
 
     for (i=0;i<MAXITR;i++) {
-        // for (j=0;j<8;j++) x[j]=0;
         /* pseudorange residuals (m) */
         nv=rescode(i,obs,n,rs,dts,vare,svh,nav,x,opt,v,H,var,azel,vsat,resp,&ns, my_prng);
         // my_prng - pseudrange from 2 freq + dts (satellite bias) 
@@ -542,7 +544,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 sol->stat=opt->sateph==EPHOPT_SBAS?SOLQ_SBAS:SOLQ_SINGLE;
             }
             static int decimate = 0;
-            if /*(stat &&*/ ((decimate++ % 5 == 0))
+            if (decimate++ % paramDecimation == 0)
             {
 
     // --------------------- g2o part start -----------------------------------
@@ -597,17 +599,11 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 myOptimization.processOutput(week, tow);
                 lastEstPose = myOptimization.getLastRoverPose();
                 lastEstBiases = myOptimization.getLastBiasesValue();
-                static int cntEnd = 0;
-                std::cout << "Processing no. " << cntEnd << std::endl;
-                if(cntEnd++ > 1000) {
-                    myOptimization.optimizeAll();
-                    exit(0);
-                }
 
     // --------------------- g2o part end -----------------------------------
 
             }
-            // Fixed solution, but not accurate
+            // GPS solution exists, but invalid 
             else{
                 // int week;
                 // double tow = time2gpst(sol->time, &week);

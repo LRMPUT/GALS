@@ -14,6 +14,13 @@
     <arg name="optimizeBiasesAgain" default="true" />
     <arg name="optimizeBiasesAgainEnd" default="true" />
     <arg name="laserInform" default="10" />
+    <arg name="filterGPS" default="false" />
+    <arg name="maxGPSSpeed" default="20" /> <!-- Limits max distance between GPS poses -->
+    <arg name="maxAltToDstPct" default="20" /> <!-- % of altitude change relative to distance -->
+    <arg name="decimation" default="1000" /> <!-- n - process each n-th pose -->
+    <arg name="posesToProcess" default="12399" /> <!-- limit of poses for processing (before decimation) -->
+                                                  <!-- Must not exceed valid poses number in sequence or optimizeAll() will not be called -->
+                                                  <!-- Odaiba: 12399 poses-->
 
     <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen">
 
@@ -30,6 +37,11 @@
         <param name="optimizeBiasesAgain" type="bool" value="$(arg optimizeBiasesAgain)" />
         <param name="optimizeBiasesAgainEnd" type="bool" value="$(arg optimizeBiasesAgainEnd)" />
         <param name="laserInform" type="int" value="$(arg laserInform)" />
+        <param name="filterGPS" type="bool" value="$(arg filterGPS)" />
+        <param name="maxGPSSpeed" type="int" value="$(arg maxGPSSpeed)" />
+        <param name="maxAltToDstPct" type="int" value="$(arg maxAltToDstPct)" />
+        <param name="decimation" type="int" value="$(arg decimation)" />
+        <param name="posesToProcess" type="int" value="$(arg posesToProcess)" />
     </node>
 
 </launch>

@@ -112,7 +112,12 @@ if __name__ == '__main__':
                 'maxIterationsEnd:=10',
                 'optimizeBiasesAgain:=true',
                 'optimizeBiasesAgainEnd:=true',
-		'laserInform:=10',
+                'laserInform:=10',
+                'filterGPS:=false',
+                'maxGPSSpeed:=20',
+                'maxAltToDstPct:=20',
+                'decimation:=1',
+				'posesToProcess:=12399' # Odaiba: 12399
 	]
 
 	###############################################################################
