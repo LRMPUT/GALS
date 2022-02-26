@@ -107,15 +107,18 @@ if __name__ == '__main__':
                 
                 '../launch/raw_gnss_rtklib.launch',
                 'verbose:=false',
-                #'windowSize:=20',
+                'windowSize:=10',
                 'maxIterations:=50',
-                'maxIterationsEnd:=10',
+                'maxIterationsEnd:=15',
                 'optimizeBiasesAgain:=true',
                 'optimizeBiasesAgainEnd:=true',
                 'laserInform:=10',
+				'laserTimeOffset:=0' # Odaiba: 3
                 'filterGPS:=false',
                 'maxGPSSpeed:=20',
+				'maxGPSVertSpeed:=5',
                 'maxAltToDstPct:=20',
+				'skipGPSPoses:=0'
                 'decimation:=1',
 				'posesToProcess:=12399' # Odaiba: 12399
 	]

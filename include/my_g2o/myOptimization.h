@@ -27,6 +27,8 @@
 #include "BiasVertex.h"
 #include "DistanceEdge.h"
 #include "myParameters.h"
+#include "BiasDriftVertex.h"
+#include "BiasDriftEdge.h"
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -36,6 +38,7 @@ G2O_USE_TYPE_GROUP(slam3d);
 G2O_USE_OPTIMIZATION_LIBRARY(dense);
 
 #define NUMBIASES 5
+#define NUMDRIFTBIASES 0
 
 
 class LaserPose
@@ -94,6 +97,8 @@ class MyOptimization
 {
     public:
     MyOptimization();
+    void addBiasDriftVertex();
+    void addBiasDriftEdge(int, double);
     void addRoverVertex(const Eigen::Matrix4d &est);
     void addBiasesVertices(const std::array<double,NUMBIASES> &est);
     void addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, double information, int sys);
@@ -105,6 +110,7 @@ class MyOptimization
     void optimizeAll();
     void processOutput(int, double);
     void saveOutputToFile(std::string filename, Eigen::Matrix4d pose, int week, double tow);
+    void saveBiasesToFile(std::string filename, std::array<double,NUMBIASES> lastBiasesValue, int week, double tow);
     bool readLaserData(std::string);
     void addVelToLastOptimResult(std::array <double,3> vel, double tow);
     void saveG2OFile();
@@ -124,6 +130,7 @@ class MyOptimization
     std::vector<g2o::EdgeSE3*> laserEdgesList;
     std::vector<std::vector<g2o::GPSEdgePrior*>> GPSEdgesListList;
     std::vector<g2o::BiasVertex*> biasList;
+    std::vector<g2o::BiasDriftEdge*> biasDriftEdgesList;
 };
 
 #endif

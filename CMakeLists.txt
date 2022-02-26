@@ -183,7 +183,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/raw_gnss_rtklib.cpp src/my_g2o/GPSEdge.cpp src/my_g2o/BiasVertex.cpp src/my_g2o/GPSEdgePrior.cpp src/my_g2o/myOptimization.cpp src/my_g2o/DistanceEdge.cpp src/my_g2o/my_types.cpp
+add_executable(${PROJECT_NAME}_node src/raw_gnss_rtklib.cpp src/my_g2o/GPSEdge.cpp src/my_g2o/BiasVertex.cpp src/my_g2o/GPSEdgePrior.cpp src/my_g2o/myOptimization.cpp src/my_g2o/DistanceEdge.cpp src/my_g2o/my_types.cpp src/my_g2o/BiasDriftEdge.cpp src/my_g2o/BiasDriftVertex.cpp
 ./RTKLIB/src/rtkcmn.c
 ./RTKLIB/src/rtkpos.c
 ./RTKLIB/src/postpos.c

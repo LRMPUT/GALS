@@ -65,7 +65,7 @@ static double varerr(const prcopt_t *opt, double el, int sys)
 static double gettgd(int sat, const nav_t *nav, int type)
 {
     int i,sys=satsys(sat,NULL);
-    
+
     if (sys==SYS_GLO) {
         for (i=0;i<nav->ng;i++) {
             if (nav->geph[i].sat==sat) break;
@@ -96,22 +96,22 @@ static double prange(const obsd_t *obs, const nav_t *nav, const prcopt_t *opt,
 {
     double P1,P2,gamma,b1,b2;
     int sat,sys;
-    
+
     sat=obs->sat;
     sys=satsys(sat,NULL);
     P1=obs->P[0];
     P2=obs->P[1];
     *var=0.0;
-    
+
     if (P1==0.0||(opt->ionoopt==IONOOPT_IFLC&&P2==0.0)) return 0.0;
-    
+
     /* P1-C1,P2-C2 DCB correction */
     if (sys==SYS_GPS||sys==SYS_GLO) {
         if (obs->code[0]==CODE_L1C) P1+=nav->cbias[sat-1][1]; /* C1->P1 */
         if (obs->code[1]==CODE_L2C) P2+=nav->cbias[sat-1][2]; /* C2->P2 */
     }
     if (opt->ionoopt==IONOOPT_IFLC) { /* dual-frequency */
-        
+
         if (sys==SYS_GPS||sys==SYS_QZS) { /* L1-L2,G1-G2 */
             gamma=SQR(FREQ1/FREQ2);
             return (P2-gamma*P1)/(1.0-gamma);
@@ -142,7 +142,7 @@ static double prange(const obsd_t *obs, const nav_t *nav, const prcopt_t *opt,
     }
     else { /* single-freq (L1/E1/B1) */
         *var=SQR(ERR_CBIAS);
-        
+
         if (sys==SYS_GPS||sys==SYS_QZS) { /* L1 */
             b1=gettgd(sat,nav,0); /* TGD (m) */
             return P1-b1;
@@ -189,7 +189,7 @@ extern int ionocorr(gtime_t time, const nav_t *nav, int sat, const double *pos,
     trace(4,"ionocorr: time=%s opt=%d sat=%2d pos=%.3f %.3f azel=%.3f %.3f\n",
           time_str(time,3),ionoopt,sat,pos[0]*R2D,pos[1]*R2D,azel[0]*R2D,
           azel[1]*R2D);
-    
+
     /* GPS broadcast ionosphere model */
     if (ionoopt==IONOOPT_BRDC) {
         *ion=ionmodel(time,nav->ion_gps,pos,azel);
@@ -231,7 +231,7 @@ extern int tropcorr(gtime_t time, const nav_t *nav, const double *pos,
     trace(4,"tropcorr: time=%s opt=%d pos=%.3f %.3f azel=%.3f %.3f\n",
           time_str(time,3),tropopt,pos[0]*R2D,pos[1]*R2D,azel[0]*R2D,
           azel[1]*R2D);
-    
+
     /* Saastamoinen model */
     if (tropopt==TROPOPT_SAAS||tropopt==TROPOPT_EST||tropopt==TROPOPT_ESTG) {
         *trp=tropmodel(time,pos,azel,REL_HUMI);
@@ -257,20 +257,20 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
     gtime_t time;
     double r,freq,dion,dtrp,vmeas,vion,vtrp,rr[3],pos[3],dtr,e[3],P;
     int i,j,nv=0,sat,sys,mask[NX-3]={0};
-    
+
     trace(3,"resprng : n=%d\n",n);
-    
+
     for (i=0;i<3;i++) rr[i]=x[i];
     dtr=x[3];
-    
+
     ecef2pos(rr,pos);
-    
+
     for (i=*ns=0;i<n&&i<MAXOBS;i++) {
         vsat[i]=0; azel[i*2]=azel[1+i*2]=resp[i]=0.0;
         time=obs[i].time;
         sat=obs[i].sat;
         if (!(sys=satsys(sat,NULL))) continue;
-        
+
         /* reject duplicated observation data */
         if (i<n-1&&i<MAXOBS-1&&sat==obs[i+1].sat) {
             trace(2,"duplicated obs data %s sat=%d\n",time_str(time,3),sat);
@@ -279,30 +279,30 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         }
         /* excluded satellite? */
         if (satexclude(sat,vare[i],svh[i],opt)) continue;
-        
+
         /* geometric distance */
         if ((r=geodist(rs+i*6,rr,e))<=0.0) continue;
         // trace(2, "R: %13.3f\n", r);
         if (iter>0) {
             /* test elevation mask */
             if (satazel(pos,e,azel+i*2)<opt->elmin) continue;
-            
+
             /* test SNR mask */
             if (!snrmask(obs+i,azel+i*2,opt)) continue;
-            
+
             /* ionospheric correction */
             if (!ionocorr(time,nav,sat,pos,azel+i*2,opt->ionoopt,&dion,&vion)) continue;
             if ((freq=sat2freq(sat,obs[i].code[0],nav))==0.0) continue;
             dion*=SQR(FREQ1/freq);
             vion*=SQR(FREQ1/freq);
-            
+
             /* tropospheric correction */
             if (!tropcorr(time,nav,pos,azel+i*2,opt->tropopt,&dtrp,&vtrp)) continue;
-            
+
         }
         /* psendorange with code bias correction */
         if ((P=prange(obs+i,nav,opt,&vmeas))==0.0) continue;
-        
+
         /* pseudorange residual */
         v[nv]=P-(r+dtr-CLIGHT*dts[i*2]+dion+dtrp);
 
@@ -319,9 +319,9 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         else if (sys==SYS_QZS) {v[nv]-=x[8]; H[8+nv*NX]=1.0; mask[5]=1;}
 #endif
         else mask[0]=1;
-        
+
         vsat[i]=1; resp[i]=v[nv]; (*ns)++;
-        
+
         /* variance of pseudorange error */
         var[nv++]=varerr(opt,azel[1+i*2],sys)+vare[i]+vmeas+vion+vtrp;
     }
@@ -345,20 +345,20 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
     gtime_t time;
     double r,freq,dion,dtrp,vmeas,vion,vtrp,rr[3],pos[3],dtr,e[3],P;
     int i,j,nv=0,sat,sys,mask[NX-3]={0};
-    
+
     trace(3,"resprng : n=%d\n",n);
-    
+
     for (i=0;i<3;i++) rr[i]=x[i];
     dtr=x[3];
-    
+
     ecef2pos(rr,pos);
-    
+
     for (i=*ns=0;i<n&&i<MAXOBS;i++) {
         vsat[i]=0; azel[i*2]=azel[1+i*2]=resp[i]=0.0;
         time=obs[i].time;
         sat=obs[i].sat;
         if (!(sys=satsys(sat,NULL))) continue;
-        
+
         /* reject duplicated observation data */
         if (i<n-1&&i<MAXOBS-1&&sat==obs[i+1].sat) {
             trace(2,"duplicated obs data %s sat=%d\n",time_str(time,3),sat);
@@ -367,23 +367,23 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         }
         /* excluded satellite? */
         if (satexclude(sat,vare[i],svh[i],opt)) continue;
-        
+
         /* geometric distance */
         if ((r=geodist(rs+i*6,rr,e))<=0.0) continue;
         // trace(2, "R: %13.3f\n", r);
         if (iter>0) {
             /* test elevation mask */
             if (satazel(pos,e,azel+i*2)<opt->elmin){             /* trace(2, "Rej 1 Sat:  %2d\n", obs[i].sat); */ continue;}
-            
+
             /* test SNR mask */
             if (!snrmask(obs+i,azel+i*2,opt)){              trace(2, "Rej 2 Sat:  %2d\n", obs[i].sat); continue;}
-            
+
             /* ionospheric correction */
             if (!ionocorr(time,nav,sat,pos,azel+i*2,opt->ionoopt,&dion,&vion)) {              trace(2, "Rej 3 Sat:  %2d\n", obs[i].sat); continue;}
             if ((freq=sat2freq(sat,obs[i].code[0],nav))==0.0) {              trace(2, "Rej 4 Sat:  %2d\n", obs[i].sat); continue;}
             dion*=SQR(FREQ1/freq);
             vion*=SQR(FREQ1/freq);
-            
+
             /* tropospheric correction */
             if (!tropcorr(time,nav,pos,azel+i*2,opt->tropopt,&dtrp,&vtrp)) {
                 {              trace(2, "Rej 5 Sat:  %2d\n", obs[i].sat); continue;}
@@ -391,7 +391,7 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         }
         /* psendorange with code bias correction */
         if ((P=prange(obs+i,nav,opt,&vmeas))==0.0) {              trace(2, "Rej 6 Sat:  %2d\n", obs[i].sat); continue;}
-        
+
         // trace(2, "Prange: %13.3f\n", P);
         /* pseudorange residual */
         v[nv]=P-(r+dtr-CLIGHT*dts[i*2]+dion+dtrp);
@@ -416,9 +416,9 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         else if (sys==SYS_QZS) {v[nv]-=x[8]; H[8+nv*NX]=1.0; mask[5]=1;}
 #endif
         else mask[0]=1;
-        
+
         vsat[i]=1; resp[i]=v[nv]; (*ns)++; my_prng[i] = tmp;
-        
+
         /* variance of pseudorange error */
         var[nv++]=varerr(opt,azel[1+i*2],sys)+vare[i]+vmeas+vion+vtrp;
         // if (obs[i].sat == 5)
@@ -448,9 +448,9 @@ static int valsol(const double *azel, const int *vsat, int n,
 {
     double azels[MAXOBS*2],dop[4],vv;
     int i,ns;
-    
+
     trace(3,"valsol  : n=%d nv=%d\n",n,nv);
-    
+
     /* Chi-square validation of residuals */
     vv=dot(v,v,nv);
     if (nv>nx&&vv>chisqr[nv-nx-1]) {
@@ -465,10 +465,12 @@ static int valsol(const double *azel, const int *vsat, int n,
         ns++;
     }
     dops(ns,azels,opt->elmin,dop);
+    // std::cout << "GDOP " << dop[0] << " " << dop[1] << " " << dop[2] << " " << dop[3] << std::endl;
     if (dop[0]<=0.0||dop[0]>opt->maxgdop) {
         sprintf(msg,"gdop error nv=%d gdop=%.1f",nv,dop[0]);
         return 0;
     }
+//    if(dop[0] > 2.0 ) return 0;
     return 1;
 }
 /* estimate receiver position ------------------------------------------------*/
@@ -481,22 +483,27 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     int i,j,k,info,stat,nv,ns;
     double *my_prng;
     trace(3,"estpos  : n=%d\n",n);
-    
+
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
     my_prng=mat(n+4,1);
 
-    for (i = 0; i < 3; i++) x[i] = sol->rr[i];
+    for (i = 0; i < 3; i++) x[i] = sol->rr[i]; // Better results of RTKLIB output when commmented
 
     if (!ros::ok())
         exit(0);
 
     static int cntEnd = 1;
+    std::cout << "Cnt: " << cntEnd << std::endl;
     if (cntEnd++ >= paramPosesToProcess){
         std::cout << "Reached poses processing limit" << std::endl;
         myOptimization.optimizeAll();
         exit(0);
     }
-    
+
+    // Initalize g2o optimization
+    static bool initalize = true;
+    static bool readyGPS = false;
+
     // static MyOptimization myOptimization;
     static Eigen::Matrix4d lastEstPose = Eigen::Matrix4d::Identity();
     static std::array<double, 5> lastEstBiases = {0, 0, 0, 0, 0};
@@ -504,7 +511,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     for (i=0;i<MAXITR;i++) {
         /* pseudorange residuals (m) */
         nv=rescode(i,obs,n,rs,dts,vare,svh,nav,x,opt,v,H,var,azel,vsat,resp,&ns, my_prng);
-        // my_prng - pseudrange from 2 freq + dts (satellite bias) 
+        // my_prng - pseudrange from 2 freq + dts (satellite bias)
         if (nv<NX) {
             sprintf(msg,"lack of valid sats ns=%d",nv);
             break;
@@ -517,7 +524,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
         }
         /* least square estimation */
         if ((info=lsq(H,v,NX,nv,dx,Q))) {
-            sprintf(msg,"lsq error info=%d",info);
+            sprintf(msg,"my lsq error info=%d",info);
             break;
         }
         for (j=0;j<NX;j++) {
@@ -538,7 +545,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             sol->qr[5]=(float)Q[2];    /* cov zx */
             sol->ns=(uint8_t)ns;
             sol->age=sol->ratio=0.0;
-            
+
             /* validate solution */
             if ((stat=valsol(azel,vsat,n,opt,v,nv,NX,msg))) {
                 sol->stat=opt->sateph==EPHOPT_SBAS?SOLQ_SBAS:SOLQ_SINGLE;
@@ -549,27 +556,30 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 
     // --------------------- g2o part start -----------------------------------
 
-                // Initalize g2o optimization
-                static bool initalize = true;
+
                 // Add vertex pose to be found
                 // Estimate with last pose or / RTKLIB output ?
                 Eigen::Vector3d libPose(sol->rr[0]/1e2,sol->rr[1]/1e2,sol->rr[2]/1e2);
                 Eigen::Matrix4d libPoseMat = Eigen::Matrix4d::Identity();
                 libPoseMat.block<3,1>(0,3) = libPose;
-                
+
                 if (initalize) {
                     initalize = false;
                     if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/Tokyo/Odaiba/aft_mapped_to_init_trajectory_gps_time.txt"))
                         std::cout << "Can't read laser file" << std::endl;
+
+                    // Add Bias Drift Vertex (1 for each system or 1 for all?)
+                    // myOptimization.addBiasDriftVertex();
                     myOptimization.addRoverVertex(lastEstPose);
+
                 }
                 else{
                     // TODO: Check if laser and GPS estimate gives similar pose
                     myOptimization.addRoverVertex(lastEstPose);
                 }
                 // Estimate with last biases or / RTKLIB output ?
-                // std::vector<double> libBias; 
-                // for (int k=3; k < 8; k++) 
+                // std::vector<double> libBias;
+                // for (int k=3; k < 8; k++)
                 //     libBias.push_back(x[k]);
                 // myOptimization.addBiasesVertices(libBias);
                 std::array<double,5> libBiases{sol->dtr[0]*CLIGHT, (sol->dtr[0] + sol->dtr[1])*CLIGHT, (sol->dtr[0] + sol->dtr[2])*CLIGHT , (sol->dtr[0] +sol->dtr[3])*CLIGHT, (sol->dtr[0] + sol->dtr[4])*CLIGHT};
@@ -580,6 +590,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 int week;
                 double tow = time2gpst(sol->time, &week);
                 // Remove GPS solution if data is invalid
+                int statToRestore = stat;
                 myOptimization.filterGPS(libPose, tow, stat);
                 // Number of used satellites - 1 (RTKLIB adds 1 additional val to avoid rank-deficient)
                 if (stat){
@@ -594,16 +605,26 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                     }
                 }
                 // Add laser constraints
-                myOptimization.addLaserEdge(week, tow, libPose);
-                myOptimization.optimize();
-                myOptimization.processOutput(week, tow);
-                lastEstPose = myOptimization.getLastRoverPose();
-                lastEstBiases = myOptimization.getLastBiasesValue();
+                // There must be GPS Fix previously to add laser
+                static int skipGPS = paramSkipGPSPoses;
+                if (stat)
+                    if(skipGPS-- == 0)
+                        readyGPS= true;
 
-    // --------------------- g2o part end -----------------------------------
-
+                // if (stat && readyGPS)
+                if(readyGPS)
+                {
+                    // myOptimization.addBiasDriftEdge(week, tow);
+                    myOptimization.addLaserEdge(week, tow, libPose);
+                    myOptimization.optimize();
+                    myOptimization.processOutput(week, tow);
+                    lastEstPose = myOptimization.getLastRoverPose();
+                    lastEstBiases = myOptimization.getLastBiasesValue();
+                }
+                stat = statToRestore;
+                // --------------------- g2o part end -----------------------------------
             }
-            // GPS solution exists, but invalid 
+            // GPS solution exists, but invalid
             else{
                 // int week;
                 // double tow = time2gpst(sol->time, &week);
@@ -649,19 +670,19 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 {
     double x[NX]={0},dx[NX],Q[NX*NX],*v,*H,*var,sig;
     int i,j,k,info,stat,nv,ns;
-    
+
     trace(3,"estpos  : n=%d\n",n);
-    
+
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
-    
+
     for (i=0;i<3;i++) x[i]=sol->rr[i];
 
     for (i=0;i<MAXITR;i++) {
-        
+
         /* pseudorange residuals (m) */
         nv=rescode(i,obs,n,rs,dts,vare,svh,nav,x,opt,v,H,var,azel,vsat,resp,
                    &ns);
-        
+
         if (nv<NX) {
             sprintf(msg,"lack of valid sats ns=%d",nv);
             break;
@@ -695,7 +716,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             sol->qr[5]=(float)Q[2];    /* cov zx */
             sol->ns=(uint8_t)ns;
             sol->age=sol->ratio=0.0;
-            
+
             /* validate solution */
             if ((stat=valsol(azel,vsat,n,opt,v,nv,NX,msg))) {
                 sol->stat=opt->sateph==EPHOPT_SBAS?SOLQ_SBAS:SOLQ_SINGLE;
@@ -705,7 +726,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
         }
     }
     if (i>=MAXITR) sprintf(msg,"iteration divergent i=%d",i);
-    
+
     free(v); free(H); free(var);
     return 0;
 }
@@ -720,15 +741,15 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
     char tstr[32],name[16],msg_e[128];
     double *rs_e,*dts_e,*vare_e,*azel_e,*resp_e,rms_e,rms=100.0;
     int i,j,k,nvsat,stat=0,*svh_e,*vsat_e,sat=0;
-    
+
     trace(3,"raim_fde: %s n=%2d\n",time_str(obs[0].time,0),n);
-    
+
     if (!(obs_e=(obsd_t *)malloc(sizeof(obsd_t)*n))) return 0;
     rs_e = mat(6,n); dts_e = mat(2,n); vare_e=mat(1,n); azel_e=zeros(2,n);
-    svh_e=imat(1,n); vsat_e=imat(1,n); resp_e=mat(1,n); 
-    
+    svh_e=imat(1,n); vsat_e=imat(1,n); resp_e=mat(1,n);
+
     for (i=0;i<n;i++) {
-        
+
         /* satellite exclution */
         for (j=k=0;j<n;j++) {
             if (j==i) continue;
@@ -755,11 +776,11 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
             continue;
         }
         rms_e=sqrt(rms_e/nvsat);
-        
+
         trace(3,"raim_fde: exsat=%2d rms=%8.3f\n",obs[i].sat,rms_e);
-        
+
         if (rms_e>rms) continue;
-        
+
         /* save result */
         for (j=k=0;j<n;j++) {
             if (j==i) continue;
@@ -791,15 +812,15 @@ static int resdop(const obsd_t *obs, int n, const double *rs, const double *dts,
 {
     double freq,rate,pos[3],E[9],a[3],e[3],vs[3],cosel,sig;
     int i,j,nv=0;
-    
+
     trace(3,"resdop  : n=%d\n",n);
-    
+
     ecef2pos(rr,pos); xyz2enu(pos,E);
-    
+
     for (i=0;i<n&&i<MAXOBS;i++) {
-        
+
         freq=sat2freq(obs[i].sat,obs[i].code[0],nav);
-        
+
         if (obs[i].D[0]==0.0||freq==0.0||!vsat[i]||norm(rs+3+i*6,3)<=0.0) {
             continue;
         }
@@ -809,7 +830,7 @@ static int resdop(const obsd_t *obs, int n, const double *rs, const double *dts,
         a[1]=cos(azel[i*2])*cosel;
         a[2]=sin(azel[1+i*2]);
         matmul("TN",3,1,3,1.0,E,a,0.0,e);
-        
+
         /* satellite velocity relative to receiver in ECEF */
         for (j=0;j<3;j++) {
             vs[j]=rs[j+3+i*6]-x[j];
@@ -817,13 +838,13 @@ static int resdop(const obsd_t *obs, int n, const double *rs, const double *dts,
         /* range rate with earth rotation correction */
         rate=dot(vs,e,3)+OMGE/CLIGHT*(rs[4+i*6]*rr[0]+rs[1+i*6]*x[0]-
                                       rs[3+i*6]*rr[1]-rs[  i*6]*x[1]);
-        
+
         /* Std of range rate error (m/s) */
         sig=(err<=0.0)?1.0:err*CLIGHT/freq;
-        
+
         /* range rate residual (m/s) */
         v[nv]=(-obs[i].D[0]*CLIGHT/freq-(rate+x[3]-CLIGHT*dts[1+i*2]))/sig;
-        
+
         /* design matrix */
         for (j=0;j<4;j++) {
             H[j+nv*4]=((j<3)?-e[j]:1.0)/sig;
@@ -840,20 +861,20 @@ static void estvel(const obsd_t *obs, int n, const double *rs, const double *dts
     double x[4]={0},dx[4],Q[16],*v,*H;
     double err=opt->err[4]; /* Doppler error (Hz) */
     int i,j,nv;
-    
+
     trace(3,"estvel  : n=%d\n",n);
-    
+
     v=mat(n,1); H=mat(4,n);
-    
+
     for (i=0;i<MAXITR;i++) {
-        
+
         /* range rate residuals (m/s) */
         if ((nv=resdop(obs,n,rs,dts,nav,sol->rr,x,azel,vsat,err,v,H))<4) {
             break;
         }
         /* least square estimation */
         if (lsq(H,v,4,nv,dx,Q)) break;
-        
+
         for (j=0;j<4;j++) x[j]+=dx[j];
 
         if (norm(dx,4)<1E-6) {
@@ -889,27 +910,27 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     prcopt_t opt_=*opt;
     double *rs,*dts,*var,*azel_,*resp;
     int i,stat,vsat[MAXOBS]={0},svh[MAXOBS];
-    
+
     trace(3,"pntpos  : tobs=%s n=%d\n",time_str(obs[0].time,3),n);
-    
+
     sol->stat=SOLQ_NONE;
-    
+
     if (n<=0) {
         strcpy(msg,"no observation data");
         return 0;
     }
     sol->time=obs[0].time;
     msg[0]='\0';
-    
+
     rs=mat(6,n); dts=mat(2,n); var=mat(1,n); azel_=zeros(2,n); resp=mat(1,n);
-    
+
     if (opt_.mode!=PMODE_SINGLE) { /* for precise positioning */
         opt_.ionoopt=IONOOPT_BRDC;
         opt_.tropopt=TROPOPT_SAAS;
     }
     /* satellite positons, velocities and clocks */
     satposs(sol->time,obs,n,nav,opt_.sateph,rs,dts,var,svh);
-    
+
     static MyOptimization myOptimization;
 
     /* estimate receiver position with pseudorange */
@@ -924,8 +945,8 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
         estvel(obs,n,rs,dts,nav,&opt_,sol,azel_,vsat);
         int week;
         double tow = time2gpst(sol->time, &week);
-        std::array<double,3> vel; vel[0] = sol->rr[3]; vel[1] = sol->rr[4]; vel[2] = sol->rr[5]; 
-        myOptimization.addVelToLastOptimResult(vel, tow);
+        std::array<double,3> vel; vel[0] = sol->rr[3]; vel[1] = sol->rr[4]; vel[2] = sol->rr[5];
+       // myOptimization.addVelToLastOptimResult(vel, tow);
     }
     if (azel) {
         for (i=0;i<n*2;i++) azel[i]=azel_[i];

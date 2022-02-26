@@ -6,6 +6,8 @@
 #include "GPSEdgePrior.h"
 #include "BiasVertex.h"
 #include "DistanceEdge.h"
+#include "BiasDriftVertex.h"
+#include "BiasDriftEdge.h"
 
 
 #endif

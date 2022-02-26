@@ -29,9 +29,12 @@ int paramMaxIterationsEnd;
 bool paramOptimizeBiasesAgain;
 bool paramOptimizeBiasesAgainEnd;
 int paramLaserInform;
+int paramLaserTimeOffset;
 bool paramFilterGPS;
 int paramMaxGPSSpeed;
+int paramMaxGPSVertSpeed;
 int paramMaxAltToDstPct;
+int paramSkipGPSPoses;
 int paramDecimation;
 int paramPosesToProcess;
 
@@ -44,15 +47,18 @@ int main(int argc, char **argv)
 
 	/* get setup parameters */
 	int mode, nf, soltype;
-	std::string roverMeasureFile, baseMeasureFile, BeiDouEmpFile, GPSEmpFile;
+	std::string roverMeasureFile, baseMeasureFile, BeiDouEmpFile, GPSEmpFile, GPSEmpFile2, GPSEmpFile3;
 	std::string out_folder;
 	nh.param("mode",   mode, 2);
-	nh.param("nf",     nf, 2);
+	nh.param("nf",     nf, 3);
 	nh.param("soltype",soltype, 2);
 	ros::param::get("roverMeasureFile", roverMeasureFile);
 	ros::param::get("baseMeasureFile", baseMeasureFile);
 	ros::param::get("BeiDouEmpFile", BeiDouEmpFile);
 	ros::param::get("GPSEmpFile", GPSEmpFile);
+	ros::param::get("GPSEmpFile2", GPSEmpFile2);
+	ros::param::get("GPSEmpFile3", GPSEmpFile3);
+
 	ros::param::get("out_folder", out_folder);
 
 	// Read optimization parameters
@@ -63,9 +69,12 @@ int main(int argc, char **argv)
 	nh.param("optimizeBiasesAgain",paramOptimizeBiasesAgain, true);
 	nh.param("optimizeBiasesAgainEnd",paramOptimizeBiasesAgainEnd, false);
 	nh.param("laserInform", paramLaserInform, 10);
+	nh.param("laserTimeOffset", paramLaserTimeOffset, 10);
 	nh.param("filterGPS", paramFilterGPS, false);
 	nh.param("maxGPSSpeed", paramMaxGPSSpeed, 20);
+	nh.param("maxGPSVertSpeed", paramMaxGPSVertSpeed, 5);
 	nh.param("maxAltToDstPct", paramMaxAltToDstPct, 20);
+	nh.param("skipGPSPoses", paramSkipGPSPoses, 20);
 	nh.param("decimation", paramDecimation, 1);
 	if (!nh.param("posesToProcess", paramPosesToProcess, 1)){
 		ROS_INFO("\033[1;31m Parameter posesToProcess was not set \033[0m");
@@ -129,6 +138,8 @@ int main(int argc, char **argv)
 	strcpy(infile[n++],strdup(baseMeasureFile.c_str()));
 	strcpy(infile[n++],strdup(BeiDouEmpFile.c_str()));
 	strcpy(infile[n++],strdup(GPSEmpFile.c_str()));
+	strcpy(infile[n++],strdup(GPSEmpFile2.c_str()));
+	strcpy(infile[n++],strdup(GPSEmpFile3.c_str()));
 
 	/* if you use the RTK mode, specify the position of the station (only used by RTKLIB)
 	 * following is an example position of the base HKSC in Hong Kong */
