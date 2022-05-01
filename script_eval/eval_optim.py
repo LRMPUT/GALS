@@ -86,7 +86,9 @@ if __name__ == '__main__':
 	# Selected Kitti sequences
 	kitti_sequences = [
     					{"seq" : 1,  "posesToProcess" : "786", "roverMeasureFile" : "$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.f9p.splitter.obs"},
-					{"seq" : 2,  "posesToProcess" : "782", "roverMeasureFile" : "$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.m8t.GC.obs"}
+					{"seq" : 2,  "posesToProcess" : "782", "roverMeasureFile" : "$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.m8t.GC.obs"},
+					{"seq" : 3,  "posesToProcess" : "786", "roverMeasureFile" : "$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.google.pixel4.obs"}
+
 	]
 	# How many times repeat single parameters
 	repeat_num = 1
