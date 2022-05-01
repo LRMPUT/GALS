@@ -23,12 +23,21 @@
     <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)evaluation/g2o_output/gps_lib.pos" /> -->
 
         <!-- UrbanNav Medium - HK-Whampoa -->
-    <param name="roverMeasureFile" type="string" value="$(arg roverMeasureFile)" />
+    <!-- <param name="roverMeasureFile" type="string" value="$(arg roverMeasureFile)" />
     <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Whampoa-Deep-Urban/r3_1s_1h_hkqt141g.2021/hkqt141g.21c" />
     <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Whampoa-Deep-Urban/r3_1s_1h_hkqt141g.2021/hkqt141g.21g" />
     <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Whampoa-Deep-Urban/r3_1s_1h_hkqt141g.2021/hkqt141g.21l" />
     <param name="GPSEmpFile2" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Whampoa-Deep-Urban/r3_1s_1h_hkqt141g.2021/hkqt141g.21n" />
     <param name="GPSEmpFile3" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Whampoa-Deep-Urban/r3_1s_1h_hkqt141g.2021/hkqt141g.21q" />
+    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)evaluation/g2o_output/gps_lib.pos" /> -->
+
+            <!-- UrbanNav Medium - HK-Mongkok -->
+    <param name="roverMeasureFile" type="string" value="$(arg roverMeasureFile)" />
+    <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Mongkok/r3_1s_1h_hkqt138d.2021/hkqt138d.21c" />
+    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Mongkok/r3_1s_1h_hkqt138d.2021/hkqt138d.21g" />
+    <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Mongkok/r3_1s_1h_hkqt138d.2021/hkqt138d.21l" />
+    <param name="GPSEmpFile2" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Mongkok/r3_1s_1h_hkqt138d.2021/hkqt138d.21n" />
+    <param name="GPSEmpFile3" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Mongkok/r3_1s_1h_hkqt138d.2021/hkqt138d.21q" />
     <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)evaluation/g2o_output/gps_lib.pos" />
     
     <!-- UrbanNav Tunnel -->
