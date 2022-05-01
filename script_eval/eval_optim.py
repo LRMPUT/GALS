@@ -102,8 +102,8 @@ if __name__ == '__main__':
 
 	# Changing parameters
 	var_args = [
-   	# {"roverMeasureFile" : ["$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.f9p.splitter.obs"], "posesToProcess" : [786]} #"laserInform" : [10, 100, 200, 500, 1000], "decimation" : [5, 10] }
-    	#{"roverMeasureFile" : ["$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.m8t.GC.obs"], "posesToProcess" : [7860]} #"laserInform" : [10, 100, 200, 500, 1000], "decimation" : [5, 10] }
+		
+	
 	]
 
 	# Const parameters

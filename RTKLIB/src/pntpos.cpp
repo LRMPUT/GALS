@@ -566,7 +566,8 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 if (initalize) {
                     initalize = false;
                     // if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/Tokyo/Odaiba/aft_mapped_to_init_trajectory_gps_time.txt"))
-                    if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/aft_mapped_to_init_trajectory_gps_time2.txt"))
+                    // if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/aft_mapped_to_init_trajectory_gps_time2.txt"))
+                    if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/UrbanNav-HK-Whampoa-Deep-Urban/aft_mapped_to_init_trajectory_gps_time.txt"))
                         std::cout << "Can't read laser file" << std::endl;
 
                     // Add Bias Drift Vertex (1 for each system or 1 for all?)
