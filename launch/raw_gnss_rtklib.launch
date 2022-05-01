@@ -4,22 +4,22 @@
     
     <!-- Path of dataset -->
     <!-- UrbanNav Tokyo -->
-    <param name="roverMeasureFile" type="string" value="$(arg roverMeasureFile)" />
+    <!-- <param name="roverMeasureFile" type="string" value="$(arg roverMeasureFile)" />
     <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base_trim23ble.obs" />
     <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/base.nav" />
     <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Shinkjuku/base.nava" />
     <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)evaluation/g2o_output/gps_lib.pos" />
     <param name="GPSEmpFile2" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Shinkjuku/base.nava" />
-    <param name="GPSEmpFile3" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Shinkjuku/base.nava" />
+    <param name="GPSEmpFile3" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Shinkjuku/base.nava" /> -->
     
     <!-- UrbanNav Medium - HK_TST -->
-    <!-- <param name="roverMeasureFile" type="string" value="/home/kcwian/Pulpit/gps_test/light/20210517.light-urban.tste.ublox.f9p.splitter.obs" />
-    <param name="baseMeasureFile" type="string" value="/media/kcwian/Samsung_T51/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21c" />
-    <param name="BeiDouEmpFile" type="string" value="/media/kcwian/Samsung_T51/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21g" />
-    <param name="GPSEmpFile" type="string" value="/media/kcwian/Samsung_T51/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21l" />
-    <param name="GPSEmpFile2" type="string" value="/media/kcwian/Samsung_T51/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21n" />
-    <param name="GPSEmpFile3" type="string" value="/media/kcwian/Samsung_T51/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21q" />
-    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)evaluation/g2o_output/gps_lib.pos" /> -->
+    <param name="roverMeasureFile" type="string" value="$(arg roverMeasureFile)" />
+    <param name="baseMeasureFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21c" />
+    <param name="BeiDouEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21g" />
+    <param name="GPSEmpFile" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21l" />
+    <param name="GPSEmpFile2" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21n" />
+    <param name="GPSEmpFile3" type="string" value="$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/r3_1s_1h_hkqt137c.2021/hkqt137c.21q" />
+    <param name="out_folder" type="string" value="$(find raw_gnss_rtklib)evaluation/g2o_output/gps_lib.pos" />
     
     <!-- UrbanNav Tunnel -->
     <!-- <param name="roverMeasureFile" type="string" value="/home/kcwian/Workspace/catkin_gnss_2/src/raw_gnss_rtklib/dataset/UrbanNav/UrbanNav_tunnel/obs/20210518.tunnel.cht.ublox.f9p.obs" />

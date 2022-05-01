@@ -283,7 +283,7 @@ void MyOptimization::optimizeAll()
   std::cout << "4" << std::endl;
 
   std::cout << "Vertices too optimize: " << unfixedNum << std::endl;
-  
+
   std::cout << "Starting whole optimization" << std::endl;
   bool ok = optimizer.initializeOptimization(optLevel);
   if (ok)
@@ -439,19 +439,22 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   }
   // Return if no match found or its the first one
   if (matchedLaserPose == -1 || matchedLaserPose == 0)
+  {
+    std::cout << "Matched: "  << matchedLaserPose << std::endl;
     return;
-
+  }
   // First Match
   if( hasFirstMatch == false){
     hasFirstMatch = true;
     lastLaserIdx = matchedLaserPose;
+    std::cout << "FirstPose" << std::endl;
     return;
   }
 
   // Check if previous poses exists
   if (optimizationResults.size() < 1)
     return;
-    
+
   // Previous GPS position
   OptimizationResults prevGPSPos = optimizationResults.back();
 
