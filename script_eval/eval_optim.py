@@ -76,7 +76,7 @@ def runLaunch(roslaunch_file, path,  cnt, repeat, kitti_item):
 if __name__ == '__main__':
     
     # Update evaluation script
-	subprocess.call("jupyter nbconvert --to python evaluationTokyo.ipynb", shell=True, cwd="../evaluation")
+	subprocess.call("jupyter nbconvert --to python evaluationHongKong.ipynb", shell=True, cwd="../evaluation")
     
 	########################### Parameters  ##############################
 
@@ -85,7 +85,8 @@ if __name__ == '__main__':
 
 	# Selected Kitti sequences
 	kitti_sequences = [
-    					{"seq" : 1}
+    					{"seq" : 1,  "posesToProcess" : "786", "roverMeasureFile" : "$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.f9p.splitter.obs"},
+					{"seq" : 2,  "posesToProcess" : "782", "roverMeasureFile" : "$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.m8t.GC.obs"}
 	]
 	# How many times repeat single parameters
 	repeat_num = 1
@@ -99,11 +100,8 @@ if __name__ == '__main__':
 
 	# Changing parameters
 	var_args = [
-				
-            #  {"windowSize" : numpy.arange(20,30,10)}
-			#  {"laserInform" : [1, 10, 20, 50, 100, 200, 500, 1000]}
-				# {"roverMeasureFile" : ["$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/rover_trimble.obs"], "posesToProcess": [12399]},
-				{"roverMeasureFile" : ["$(find raw_gnss_rtklib)/dataset/UrbanNav/Tokyo/Odaiba/rover_ublox.obs"], "posesToProcess" : [6206], "laserInform" : [10, 100, 200, 500, 1000], "decimation" : [5, 10] }
+   	# {"roverMeasureFile" : ["$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.f9p.splitter.obs"], "posesToProcess" : [786]} #"laserInform" : [10, 100, 200, 500, 1000], "decimation" : [5, 10] }
+    	#{"roverMeasureFile" : ["$(find raw_gnss_rtklib)/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/obs/20210517.light-urban.tste.ublox.m8t.GC.obs"], "posesToProcess" : [7860]} #"laserInform" : [10, 100, 200, 500, 1000], "decimation" : [5, 10] }
 	]
 
 	# Const parameters
@@ -118,15 +116,15 @@ if __name__ == '__main__':
                 'maxIterationsEnd:=15',
                 'optimizeBiasesAgain:=true',
                 'optimizeBiasesAgainEnd:=true',
-                # 'laserInform:=10',
-				'laserTimeOffset:=3', # Odaiba: 3
+                'laserInform:=10',
+		'laserTimeOffset:=0', # Odaiba: 3
                 'filterGPS:=true',
                 'maxGPSSpeed:=20',
-				'maxGPSVertSpeed:=5',
+		'maxGPSVertSpeed:=5',
                 'maxAltToDstPct:=20',
-				'skipGPSPoses:=0',
-                # 'decimation:=20',
-				# 'posesToProcess:=12399' # Odaiba: 12399
+		'skipGPSPoses:=0',
+                'decimation:=20',
+		#'posesToProcess:=12399' # Odaiba: 12399
 
 	]
 
@@ -168,13 +166,15 @@ if __name__ == '__main__':
 				for item in kitti_sequences:
 					folderPath = createFolder(i, repeat, item["seq"])
 					roslaunch_args = roslaunch_args_copy[:]
+					roslaunch_args.append("roverMeasureFile:=" + item["roverMeasureFile"])
+					roslaunch_args.append("posesToProcess:=" + item["posesToProcess"])
 					roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(roslaunch_args)[0], roslaunch_args[1:])]
 					runLaunch(roslaunch_file, folderPath, i, repeat, item)
 
 					subprocess.call("rm ./results/* ", shell=True, cwd="../evaluation")
 					# Call evaluation
 					f = open(folderPath + "results.txt", "w")
-					subprocess.call("./env/bin/python -m IPython evaluationTokyo.py", stdout=f, shell=True, cwd="../evaluation")			
+					subprocess.call("./env/bin/python -m IPython evaluationHongKong.py", stdout=f, shell=True, cwd="../evaluation")			
 					# Moving results
 					subprocess.call("cp ./results/evo_ape_* " + folderPath, shell=True, cwd="../evaluation")
 					subprocess.call("cp ./results/gt_ecef.tum " + folderPath, shell=True, cwd="../evaluation")
