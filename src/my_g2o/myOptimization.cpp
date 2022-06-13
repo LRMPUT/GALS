@@ -43,6 +43,10 @@ MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLe
 
     firstPoseWithLaserEdgeId = -1;
 
+    actDopplVel[0] = actDopplVel[1] = actDopplVel[2] = 0;
+    actDopplCov[0] = actDopplCov[1] = actDopplCov[2] = 0;
+    actDopplTow = 0;
+
     std::cout << "Parameters: " << std::endl;
     std::cout << "paramVerbose: " << paramVerbose << std::endl;
     std::cout << "paramWindowSize: " << paramWindowSize << std::endl;
@@ -59,6 +63,7 @@ MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLe
     std::cout << "paramMaxAltToDstPct: " << paramMaxAltToDstPct << std::endl;
     std::cout << "paramDecimation: " << paramDecimation << std::endl;
     std::cout << "paramPosesToProcess: " << paramPosesToProcess << std::endl;
+    std::cout << "paramDopplerInformFactor: " << paramDopplerInformFactor << std::endl;
 }
 void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
 {
@@ -269,6 +274,11 @@ void MyOptimization::optimizeAll()
   for (int i = 0; i < biasDriftEdgesList.size(); i++)
     biasDriftEdgesList.at(i)->setLevel(optLevel);
 
+  // Set all Doppler edges for optimization
+  std::cout << "Doppler Edges: " << dopplerEdgesList.size() << std::endl;
+  for (int i = 0; i < dopplerEdgesList.size(); i++)
+    dopplerEdgesList.at(i)->setLevel(optLevel);
+
   // GPSEdgeListList does not contain all indices filled - there might be "jumps", as index correspond to pose number
   for (int i = GPSEdgesListList.size() - 1; i>= 0; i--)
      for (int j=0; j < GPSEdgesListList[i].size(); j++)
@@ -396,6 +406,71 @@ bool MyOptimization::readLaserData(std::string filename)
   std::cout << "Read " << laserPoses.size() << " poses" << std::endl;
   return ok;
 
+}
+
+void MyOptimization::addDopplerEdge(int week, double tow)
+{
+
+  std::cout << "Doppler Edge func "  << std::endl;
+  if (optimizationResults.size() == 0 )
+    return;
+
+  OptimizationResults & prevGPSPos = optimizationResults.back();
+ 
+  double timeDiff = tow - prevGPSPos.getTow();
+  // If more than 3s
+  if (timeDiff > 3.0){
+    return;
+    std::cout << "Time diff " << std::endl;
+  }
+
+  if (actDopplVel[0] == 0 && actDopplVel[1] == 0 && actDopplVel[2] == 0){
+   std::cout << "Actual vel 0" << std::endl;
+  //  exit(0);
+    return;
+  }
+
+  if (prevGPSPos.getVelocity()[0] == 0 && prevGPSPos.getVelocity()[1] == 0 && prevGPSPos.getVelocity()[2] == 0)
+  {
+    std::cout << "Prev vel 0" << std::endl;
+    // exit(0);
+    return;
+  }
+  g2o::DopplerEdge *dopplerEdge = new g2o::DopplerEdge();
+
+  optimizer.vertex(prevGPSPos.getRoverVertexId())->setFixed(true);
+  dopplerEdge->setVertex(0, dynamic_cast<g2o::VertexSE3 *>(optimizer.vertex(prevGPSPos.getRoverVertexId())));
+  dopplerEdge->setVertex(1, dynamic_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases)));
+
+  g2o::VertexSE3 *ve3 = dynamic_cast<g2o::VertexSE3 *> (optimizer.vertex(lastVertexId - numBiases));
+  //std::cout << ve3->estimate().matrix() <<  std::endl << prevGPSPos.getEstimatedRoverPose() << std::endl;
+ 
+
+  // Add measurement
+ 
+  // std::cout << "Doppler Edge " << actDopplVel[0] << "  "  << actDopplVel[1] << "  "  << actDopplVel[2] << "  Prev vel  " << prevGPSPos.getVelocity()[0] << "  " << prevGPSPos.getVelocity()[1] << "  "  << prevGPSPos.getVelocity()[2] << std::endl;
+  std::array<double,3> velMeasurement; velMeasurement[0] = (actDopplVel[0] + prevGPSPos.getVelocity()[0]) / 2.0; velMeasurement[1] = (actDopplVel[1] + prevGPSPos.getVelocity()[1]) / 2.0 ; velMeasurement[2] = (actDopplVel[2] + prevGPSPos.getVelocity()[2]) / 2.0;
+  std::array<double,3> dstMeasurement = velMeasurement; dstMeasurement[0] *= timeDiff; dstMeasurement[1] *= timeDiff; dstMeasurement[2] *= timeDiff;
+  std::cout << "Doppler dst: " << dstMeasurement[0]/1e2 << "  "  << dstMeasurement[1]/1e2 << "  "  << dstMeasurement[2]/1e2 << "  "  << std::endl;
+  std::cout << "Timediff:  " << timeDiff << std::endl;
+  dopplerEdge->setMeasurement(dstMeasurement);
+  // // Add information matrix
+  std::array<double,3> information;
+  information[0] = paramDopplerInformFactor / ( 100.0 * actDopplCov[0] * timeDiff);  information[1] = paramDopplerInformFactor / ( 100.0 * actDopplCov[1] * timeDiff);  information[2] = paramDopplerInformFactor / (100 * actDopplCov[2] * timeDiff);
+  // std::cout << "Information Doppler:  " << information[0] << "  " << information[1] << "  " << information[2] << "  " << std::endl;
+  dopplerEdge->setInformation(information);
+  dopplerEdge->setLevel(optLevel);
+  // // Add edge to optimization
+  optimizer.addEdge(dopplerEdge);
+  dopplerEdgesList.push_back(dopplerEdge);
+
+  g2o::Isometry3 estimate = g2o::Isometry3::Identity();
+  estimate = prevGPSPos.getEstimatedRoverPose();
+    // std::cout << estimate.matrix() << std::endl;
+
+  estimate(0,3) += dstMeasurement[0]/1e2; estimate(1,3) += dstMeasurement[1]/1e2; estimate(2,3) += dstMeasurement[2]/1e2;
+  // std::cout << estimate.matrix() << std::endl;
+  // ve3->setEstimate(estimate); // Laser also sets estimate
 }
 
 void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
@@ -642,16 +717,25 @@ void MyOptimization::filterGPS(Eigen::Vector3d libPose, double tow, int &stat)
   prevAlt = posLLA[2];
 }
 
-void MyOptimization::addVelToLastOptimResult(std::array <double,3> vel, double tow)
+void MyOptimization::addVelToLastOptimResult(std::array <double,3> vel, std::array <double,3> cov, double tow)
 {
-  OptimizationResults & last = optimizationResults.back();
-  //Should be exactly the same
-  if( abs(last.getTow() - tow) < 0.05)
-    last.setVelocity(vel);
-  else{
-    // std::cout << std::setprecision(15) <<  "Tow: "  << last.getTow() << "   vs   " << tow << std::endl;
-    // exit(0);
+
+  // Save previous velocity
+  if (optimizationResults.size() > 0)
+  {
+    OptimizationResults &last = optimizationResults.back();
+    //Should be exactly the same
+    // if (abs(last.getTow() - tow) < 0.05)
+    {
+      last.setVelocity(actDopplVel);
+      // std::cout << "Last vel: " <<  last.getVelocity()[0] << std::endl;
+    }
   }
+
+  // Set actual velocity
+  actDopplVel = vel;
+  actDopplTow = tow;
+  actDopplCov = cov;
 }
 
 void addLaserVertex()

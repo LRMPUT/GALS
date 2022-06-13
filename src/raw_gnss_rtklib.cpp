@@ -37,6 +37,7 @@ int paramMaxAltToDstPct;
 int paramSkipGPSPoses;
 int paramDecimation;
 int paramPosesToProcess;
+int paramDopplerInformFactor;
 
 int main(int argc, char **argv)
 {
@@ -80,6 +81,7 @@ int main(int argc, char **argv)
 		ROS_INFO("\033[1;31m Parameter posesToProcess was not set \033[0m");
 		return 0;
 	}
+	nh.param("dopplerInformFactor", paramDopplerInformFactor, 1);
 
 
 	/* flag for state */

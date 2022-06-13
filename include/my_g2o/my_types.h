@@ -8,6 +8,7 @@
 #include "DistanceEdge.h"
 #include "BiasDriftVertex.h"
 #include "BiasDriftEdge.h"
+#include "DopplerEdge.h"
 
 
 #endif

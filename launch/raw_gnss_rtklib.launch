@@ -67,7 +67,7 @@
     <arg name="posesToProcess" default="12399" /> <!-- limit of poses for processing (before decimation) -->
                                                   <!-- Must not exceed valid poses number in sequence or optimizeAll() will not be called -->
                                                   <!-- Odaiba: 12399 (trimble) or 6206 (ublox) poses-->
-                                                  <!-- Shinjuku: 20791 (trimble) or (ublox) poses-->
+    <arg name="dopplerInformFactor" default="1" />
 
     <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen">
 

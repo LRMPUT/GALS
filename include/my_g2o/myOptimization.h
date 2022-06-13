@@ -29,6 +29,7 @@
 #include "myParameters.h"
 #include "BiasDriftVertex.h"
 #include "BiasDriftEdge.h"
+#include "DopplerEdge.h"
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -103,16 +104,17 @@ class MyOptimization
     void addBiasesVertices(const std::array<double,NUMBIASES> &est);
     void addEdgeSatPrior(Eigen::Matrix<double, 4, 1> &measurement, double information, int sys);
     void addLaserEdge(int, double, Eigen::Vector3d);
+    void addDopplerEdge(int, double);
     void filterGPS(Eigen::Vector3d libPose, double tow, int &stat);
     Eigen::Matrix4d getLastRoverPose();
     std::array<double,NUMBIASES> getLastBiasesValue();
     void optimize();
     void optimizeAll();
     void processOutput(int, double);
-    void saveOutputToFile(std::string filename, Eigen::Matrix4d pose, int week, double tow);
+    void saveOutputToFile(std::string filename, const Eigen::Matrix4d pose, int week, double tow);
     void saveBiasesToFile(std::string filename, std::array<double,NUMBIASES> lastBiasesValue, int week, double tow);
     bool readLaserData(std::string);
-    void addVelToLastOptimResult(std::array <double,3> vel, double tow);
+    void addVelToLastOptimResult(std::array <double,3> vel, std::array <double,3> cov, double tow);
     void saveG2OFile();
 
     private:
@@ -128,9 +130,13 @@ class MyOptimization
     std::vector<LaserPose> laserPoses;
     int firstPoseWithLaserEdgeId;
     std::vector<g2o::EdgeSE3*> laserEdgesList;
+    std::vector<g2o::DopplerEdge*> dopplerEdgesList;
     std::vector<std::vector<g2o::GPSEdgePrior*>> GPSEdgesListList;
     std::vector<g2o::BiasVertex*> biasList;
     std::vector<g2o::BiasDriftEdge*> biasDriftEdgesList;
+    std::array<double, 3> actDopplVel;
+    std::array<double, 3> actDopplCov;
+    double actDopplTow;
 };
 
 #endif

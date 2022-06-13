@@ -16,5 +16,6 @@ extern int paramMaxAltToDstPct;
 extern int paramSkipGPSPoses;
 extern int paramDecimation;
 extern int paramPosesToProcess;
+extern int paramDopplerInformFactor;
 
 #endif

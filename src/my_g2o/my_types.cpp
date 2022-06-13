@@ -7,6 +7,7 @@ namespace g2o {
 
     G2O_REGISTER_TYPE(BIAS_VERTEX, BiasVertex);
     G2O_REGISTER_TYPE(GPS_EDGE_PRIOR, GPSEdgePrior);
+    G2O_REGISTER_TYPE(DOPPLER_EDGE, DopplerEdge);
 
 
 }

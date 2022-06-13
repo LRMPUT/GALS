@@ -596,6 +596,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 // Remove GPS solution if data is invalid
                 int statToRestore = stat;
                 myOptimization.filterGPS(libPose, tow, stat);
+                static int prevStat = 0;
                 // Number of used satellites - 1 (RTKLIB adds 1 additional val to avoid rank-deficient)
                 if (stat){
                     for (int j = 0; j < n; j++){
@@ -607,7 +608,10 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                             myOptimization.addEdgeSatPrior(measurement, information, sys);
                         }
                     }
+                    if (prevStat)
+                        myOptimization.addDopplerEdge(week, tow);
                 }
+                prevStat = stat;
                 // Add laser constraints
                 // There must be GPS Fix previously to add laser
                 static int skipGPS = paramSkipGPSPoses;
@@ -938,7 +942,7 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
     static MyOptimization myOptimization;
 
     /* estimate receiver position with pseudorange */
-    stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg, myOptimization);
+    stat=estpos(obs,n,rs,dts,var,svh,nav,&opt_,sol,azel_,vsat,resp,msg);
 
     /* RAIM FDE */
     if (!stat&&n>=6&&opt->posopt[4]) {
@@ -950,8 +954,12 @@ extern int pntpos(const obsd_t *obs, int n, const nav_t *nav,
         int week;
         double tow = time2gpst(sol->time, &week);
         std::array<double,3> vel; vel[0] = sol->rr[3]; vel[1] = sol->rr[4]; vel[2] = sol->rr[5];
-       // myOptimization.addVelToLastOptimResult(vel, tow);
+        std::array<double,3> cov; cov[0] = sol->qv[0]; cov[1] = sol->qv[1]; cov[2] = sol->qv[2];
+        myOptimization.addVelToLastOptimResult(vel, cov, tow);
     }
+    // Again, but this time with velocity
+    estpos(obs, n, rs, dts, var, svh, nav, &opt_, sol, azel_, vsat, resp, msg, myOptimization);
+
     if (azel) {
         for (i=0;i<n*2;i++) azel[i]=azel_[i];
     }
