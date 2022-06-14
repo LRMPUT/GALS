@@ -597,6 +597,10 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                 int statToRestore = stat;
                 myOptimization.filterGPS(libPose, tow, stat);
                 static int prevStat = 0;
+
+                if (stat && prevStat)
+                       myOptimization.filterGPSVel(libPose, tow, stat); // Filtration based on Doppler Velocity
+
                 // Number of used satellites - 1 (RTKLIB adds 1 additional val to avoid rank-deficient)
                 if (stat){
                     for (int j = 0; j < n; j++){

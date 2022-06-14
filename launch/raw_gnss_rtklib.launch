@@ -68,6 +68,8 @@
                                                   <!-- Must not exceed valid poses number in sequence or optimizeAll() will not be called -->
                                                   <!-- Odaiba: 12399 (trimble) or 6206 (ublox) poses-->
     <arg name="dopplerInformFactor" default="1" />
+    <arg name="velToDopplerRatiox10" default="20" />
+    
 
     <node name="raw_gnss_rtklib_node" pkg="raw_gnss_rtklib" type="raw_gnss_rtklib_node" output="screen">
 
@@ -92,6 +94,8 @@
         <param name="skipGPSPoses" type="int" value="$(arg skipGPSPoses)" />
         <param name="decimation" type="int" value="$(arg decimation)" />
         <param name="posesToProcess" type="int" value="$(arg posesToProcess)" />
+        <param name="dopplerInformFactor" type="int" value="$(arg dopplerInformFactor)" />
+        <param name="velToDopplerRatiox10" type="int" value="$(arg velToDopplerRatiox10)" />
     </node>
 
 </launch>

@@ -106,6 +106,7 @@ class MyOptimization
     void addLaserEdge(int, double, Eigen::Vector3d);
     void addDopplerEdge(int, double);
     void filterGPS(Eigen::Vector3d libPose, double tow, int &stat);
+    void filterGPSVel(Eigen::Vector3d libPose, double tow, int &stat);
     Eigen::Matrix4d getLastRoverPose();
     std::array<double,NUMBIASES> getLastBiasesValue();
     void optimize();

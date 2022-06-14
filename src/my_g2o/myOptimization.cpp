@@ -64,6 +64,7 @@ MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLe
     std::cout << "paramDecimation: " << paramDecimation << std::endl;
     std::cout << "paramPosesToProcess: " << paramPosesToProcess << std::endl;
     std::cout << "paramDopplerInformFactor: " << paramDopplerInformFactor << std::endl;
+    std::cout << "paramVelToDopplerRatiox10: " << paramVelToDopplerRatiox10 << std::endl;
 }
 void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
 {
@@ -716,6 +717,49 @@ void MyOptimization::filterGPS(Eigen::Vector3d libPose, double tow, int &stat)
   prevTow = tow;
   prevAlt = posLLA[2];
 }
+
+void MyOptimization::filterGPSVel(Eigen::Vector3d libPose, double tow, int &stat)
+{
+  if (optimizationResults.size() == 0 )
+    return;
+  
+  OptimizationResults & prevGPSPos = optimizationResults.back();
+  
+  if (actDopplVel[0] == 0 && actDopplVel[1] == 0 && actDopplVel[2] == 0)
+    return;
+
+  if (prevGPSPos.getVelocity()[0] == 0 && prevGPSPos.getVelocity()[1] == 0 && prevGPSPos.getVelocity()[2] == 0)
+    return;
+
+  if (paramFilterGPS == false)
+    return;
+
+  static double prevTow = 0;
+  static Eigen::Vector3d prevLibPose;
+
+  double velToDopplerRatio = paramVelToDopplerRatiox10; // m/s
+  // Calculate GPS Distance
+  static int rejected = 0;
+  double dstDiff = (libPose - prevLibPose).norm();
+
+  std::array<double,3> velAvg; velAvg[0] = (actDopplVel[0] + prevGPSPos.getVelocity()[0]) / 2.0; velAvg[1] = (actDopplVel[1] + prevGPSPos.getVelocity()[1]) / 2.0 ; velAvg[2] = (actDopplVel[2] + prevGPSPos.getVelocity()[2]) / 2.0;
+  double velAvgNorm = sqrt(velAvg[0] * velAvg[0] + velAvg[1] * velAvg[1] + velAvg[2] * velAvg[2]);
+  double poseVel = dstDiff * 1e2 / (tow - prevTow);
+  // std::cout << "Pose velocity: "  << poseVel << "  Doppl. velocity: "  << velAvgNorm  << std::endl;
+
+  if ((poseVel / velAvgNorm) > (velToDopplerRatio / 10.0) || (poseVel / velAvgNorm) < (1 / velToDopplerRatio / 10.0))
+  {
+    std::cout << "Rejecting based on Doppler velocityddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" << std::endl;
+    stat = 0;
+  }
+
+  // Save previous values
+  prevLibPose[0] = libPose[0];
+  prevLibPose[1] = libPose[1];
+  prevLibPose[2] = libPose[2];
+  prevTow = tow;
+}
+
 
 void MyOptimization::addVelToLastOptimResult(std::array <double,3> vel, std::array <double,3> cov, double tow)
 {

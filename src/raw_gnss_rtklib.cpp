@@ -38,6 +38,7 @@ int paramSkipGPSPoses;
 int paramDecimation;
 int paramPosesToProcess;
 int paramDopplerInformFactor;
+int paramVelToDopplerRatiox10;
 
 int main(int argc, char **argv)
 {
@@ -82,6 +83,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	nh.param("dopplerInformFactor", paramDopplerInformFactor, 1);
+	nh.param("velToDopplerRatiox10", paramVelToDopplerRatiox10, 20);
 
 
 	/* flag for state */
