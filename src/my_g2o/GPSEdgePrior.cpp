@@ -13,12 +13,7 @@ namespace g2o
 
   GPSEdgePrior::GPSEdgePrior() : BaseMultiEdge<1, Eigen::Matrix<double,4,1>>() //sateliite position + pseudorange
   {
-  // resizeParameters(1);
     resize(2); // Resized number of vertexes
-    // _information.resize(2, 2);
-		// _error.resize(3, 1);
-		// _measurement.resize(2, 1);
-		// _dimension = 3;
   }
 
   void GPSEdgePrior::computeError()

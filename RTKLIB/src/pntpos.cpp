@@ -370,7 +370,6 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
 
         /* geometric distance */
         if ((r=geodist(rs+i*6,rr,e))<=0.0) continue;
-        // trace(2, "R: %13.3f\n", r);
         if (iter>0) {
             /* test elevation mask */
             if (satazel(pos,e,azel+i*2)<opt->elmin){             /* trace(2, "Rej 1 Sat:  %2d\n", obs[i].sat); */ continue;}
@@ -392,17 +391,11 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
         /* psendorange with code bias correction */
         if ((P=prange(obs+i,nav,opt,&vmeas))==0.0) {              trace(2, "Rej 6 Sat:  %2d\n", obs[i].sat); continue;}
 
-        // trace(2, "Prange: %13.3f\n", P);
         /* pseudorange residual */
         v[nv]=P-(r+dtr-CLIGHT*dts[i*2]+dion+dtrp);
-        // showmsg("v:  %13.3f", v[nv]);
-        // showmsg("nv: %3d, P:%13.3f, r: %13.3f, dtr: %8f, dts: %8f, dion: %8f, dtrp: %8f", nv, P, r, dtr, -CLIGHT*dts[i*2], dion, dtrp);
-        // double tmp = P -(dtr-CLIGHT*dts[i*2]+dion+dtrp);
 
         double tmp = P -(-CLIGHT*dts[i*2]+dion+dtrp); // No dtr
 
-        // else
-        //     trace(2,"Iter: %2d\n", iter);
         /* design matrix */
         for (j=0;j<NX;j++) {
             H[j+nv*NX]=j<3?-e[j]:(j==3?1.0:0.0);
@@ -421,16 +414,6 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
 
         /* variance of pseudorange error */
         var[nv++]=varerr(opt,azel[1+i*2],sys)+vare[i]+vmeas+vion+vtrp;
-        // if (obs[i].sat == 5)
-            // trace(2, "Variance: %13.3f %13.3f %13.3f %13.3f %13.3f\n", varerr(opt,azel[1+i*2],sys), vare[i], vmeas, vion, vtrp);
-
-        if (iter >0)
-        {
-            // trace(2, "PRNG: %2d %13.3f %13.3f %13.3f %13.3f\n", obs[i].sat, tmp, var[nv-1], dts[i*2]*1e9, -CLIGHT*dts[i*2]);
-            // showmsg("nv: %3d, P:%13.3f, r: %13.3f, dtr: %8f, dts[ns]: %13.3f dts[m]: %8f, dion: %8f, dtrp: %8f x4: %13.3f, x5: %13.3f, x6: %13.3f", nv, P, r, dtr, dts[i*2]*1e9, -CLIGHT*dts[i*2], dion, dtrp, x[4], x[5], x[6]);
-        }
-        // trace(2,"sat=%2d azel=%5.1f %4.1f res=%7.3f sig=%5.3f\n",obs[i].sat,
-        //       azel[i*2]*R2D,azel[1+i*2]*R2D,resp[i],sqrt(var[nv-1]));
     }
     /* constraint to avoid rank-deficient */
     for (i=0;i<NX-3;i++) {
@@ -465,12 +448,10 @@ static int valsol(const double *azel, const int *vsat, int n,
         ns++;
     }
     dops(ns,azels,opt->elmin,dop);
-    // std::cout << "GDOP " << dop[0] << " " << dop[1] << " " << dop[2] << " " << dop[3] << std::endl;
     if (dop[0]<=0.0||dop[0]>opt->maxgdop) {
         sprintf(msg,"gdop error nv=%d gdop=%.1f",nv,dop[0]);
         return 0;
     }
-//    if(dop[0] > 2.0 ) return 0;
     return 1;
 }
 /* estimate receiver position ------------------------------------------------*/
@@ -487,7 +468,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     v=mat(n+4,1); H=mat(NX,n+4); var=mat(n+4,1);
     my_prng=mat(n+4,1);
 
-    for (i = 0; i < 3; i++) x[i] = sol->rr[i]; // Better results of RTKLIB output when commmented
+    for (i = 0; i < 3; i++) x[i] = sol->rr[i];
 
     if (!ros::ok())
         exit(0);
@@ -504,7 +485,6 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     static bool initalize = true;
     static bool readyGPS = false;
 
-    // static MyOptimization myOptimization;
     static Eigen::Matrix4d lastEstPose = Eigen::Matrix4d::Identity();
     static std::array<double, 5> lastEstBiases = {0, 0, 0, 0, 0};
 
@@ -556,38 +536,27 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
 
     // --------------------- g2o part start -----------------------------------
 
-
                 // Add vertex pose to be found
-                // Estimate with last pose or / RTKLIB output ?
                 Eigen::Vector3d libPose(sol->rr[0]/1e2,sol->rr[1]/1e2,sol->rr[2]/1e2);
                 Eigen::Matrix4d libPoseMat = Eigen::Matrix4d::Identity();
                 libPoseMat.block<3,1>(0,3) = libPose;
 
                 if (initalize) {
                     initalize = false;
-                    // if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/Tokyo/Odaiba/aft_mapped_to_init_trajectory_gps_time.txt"))
-                    // if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/UrbanNav-HK-Medium-Urban-1/aft_mapped_to_init_trajectory_gps_time2.txt"))
-                    // if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/UrbanNav-HK-Whampoa-Deep-Urban/aft_mapped_to_init_trajectory_gps_time.txt"))
-                    if (!myOptimization.readLaserData(ros::package::getPath("raw_gnss_rtklib") + "/dataset/UrbanNav/UrbanNav-HK-Mongkok/mapping_gps_time.txt"))
-
+                    // if (!myOptimization.readLaserData(ros::package::getPath("gals") + slamOdometryPath)
+                    if (!myOptimization.readLaserData(paramSlamOdometryPath))
                         std::cout << "Can't read laser file" << std::endl;
 
-                    // Add Bias Drift Vertex (1 for each system or 1 for all?)
+                    // Add Bias Drift Vertex?
                     // myOptimization.addBiasDriftVertex();
                     myOptimization.addRoverVertex(lastEstPose);
 
                 }
                 else{
-                    // TODO: Check if laser and GPS estimate gives similar pose
                     myOptimization.addRoverVertex(lastEstPose);
                 }
-                // Estimate with last biases or / RTKLIB output ?
-                // std::vector<double> libBias;
-                // for (int k=3; k < 8; k++)
-                //     libBias.push_back(x[k]);
-                // myOptimization.addBiasesVertices(libBias);
+                // Estimate with last biases
                 std::array<double,5> libBiases{sol->dtr[0]*CLIGHT, (sol->dtr[0] + sol->dtr[1])*CLIGHT, (sol->dtr[0] + sol->dtr[2])*CLIGHT , (sol->dtr[0] +sol->dtr[3])*CLIGHT, (sol->dtr[0] + sol->dtr[4])*CLIGHT};
-                // std::cout << "LibBiases:  "  << " " << libBiases[0] << "  " << libBiases[1] << "  " << libBiases[2] << "  " << libBiases[3] << "  " << libBiases[4] << "  "  << (sol->dtr[0] + sol->dtr[5]*CLIGHT) << std::endl;
                 myOptimization.addBiasesVertices(lastEstBiases);
                 int vari = 0;
 
@@ -623,7 +592,6 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
                     if(skipGPS-- == 0)
                         readyGPS= true;
 
-                // if (stat && readyGPS)
                 if(readyGPS)
                 {
                     // myOptimization.addBiasDriftEdge(week, tow);
@@ -638,16 +606,7 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
             }
             // GPS solution exists, but invalid
             else{
-                // int week;
-                // double tow = time2gpst(sol->time, &week);
-                // myOptimization.addRoverVertex(lastEstPose);
-                // // Add bias vertices anyway, so number of biases for each pose is constant
-                // myOptimization.addBiasesVertices(lastEstBiases);
-                // myOptimization.addLaserEdge(week, tow, Eigen::Vector3d());
-                // myOptimization.optimize();
-                // myOptimization.processOutput(week, tow);
-                // lastEstPose = myOptimization.getLastRoverPose();
-                // lastEstBiases = myOptimization.getLastBiasesValue();
+
             }
 
             free(v); free(H); free(var);
@@ -657,19 +616,6 @@ static int estpos(const obsd_t *obs, int n, const double *rs, const double *dts,
     }
     if (i>=MAXITR) sprintf(msg,"iteration divergent i=%d",i);
     
-    // If no fixed solution, but with visible sats - GPS time is not missing
-    if (true)
-    {
-        // int week;
-        // double tow = time2gpst(sol->time, &week);
-        // myOptimization.addRoverVertex(lastEstPose);
-        // myOptimization.addBiasesVertices(lastEstBiases);
-        // myOptimization.addLaserEdge(week, tow);
-        // myOptimization.optimize();
-        // myOptimization.processOutput(week, tow);
-        // lastEstPose = myOptimization.getLastRoverPose();
-        // lastEstBiases = myOptimization.getLastBiasesValue();
-    }
     free(v); free(H); free(var);
     free(my_prng);
     return 0;

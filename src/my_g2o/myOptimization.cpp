@@ -31,11 +31,11 @@ MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLe
     optimizer.setVerbose(paramVerbose);
 
     g2o::SparseOptimizerTerminateAction* terminateAction = new g2o::SparseOptimizerTerminateAction;
-    terminateAction->setGainThreshold(0.0001); // 0.0000001
+    terminateAction->setGainThreshold(0.0001);
     terminateAction->setMaxIterations(paramMaxIterations);
     optimizer.addPostIterationAction(terminateAction);
     g2o::OptimizationAlgorithmProperty solverProperty;
-    optimizer.setAlgorithm(g2o::OptimizationAlgorithmFactory::instance()->construct("lm_dense", solverProperty)); // GN - can start from (0,0),  LM - must have inital estimate, but works better
+    optimizer.setAlgorithm(g2o::OptimizationAlgorithmFactory::instance()->construct("lm_dense", solverProperty));
 
     lastRoverPose = Eigen::Matrix4d::Identity();
     for (int i = 0; i < numBiases; i++)
@@ -65,6 +65,7 @@ MyOptimization::MyOptimization() : numBiases(NUMBIASES), lastVertexId(-1), optLe
     std::cout << "paramPosesToProcess: " << paramPosesToProcess << std::endl;
     std::cout << "paramDopplerInformFactor: " << paramDopplerInformFactor << std::endl;
     std::cout << "paramVelToDopplerRatiox10: " << paramVelToDopplerRatiox10 << std::endl;
+    std::cout << "paramSlamOdometryPath: " << paramSlamOdometryPath << std::endl;
 }
 void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
 {
@@ -73,9 +74,6 @@ void MyOptimization::addRoverVertex(const Eigen::Matrix4d &est)
     estIso.matrix() = est;
     vertex->setEstimate(estIso);
     vertex->setId(++lastVertexId);
-    // if (lastVertexId == 0)
-    //   vertex->setFixed(true);
-    // else
     vertex->setFixed(false);
     optimizer.addVertex(vertex);
 }
@@ -122,10 +120,7 @@ void MyOptimization::addBiasDriftEdge(int week, double tow)
       biasDriftEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(prevPose.getRoverVertexId() + 1 + i)));
       std::cout << "PrevBias ID: " << prevPose.getRoverVertexId() + 1 << " vs " << lastVertexId - numBiases * 2 << std::endl;
       if ((prevPose.getRoverVertexId() + 1) != (lastVertexId - numBiases * 2))
-      {
         std::cout << "PrevBias error: " << std::endl;
-        // exit(0);
-      }
       biasDriftEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(lastVertexId - 4 + i)));
       biasDriftEdge->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(i))); // BiasDriftVertex
 
@@ -190,22 +185,6 @@ void MyOptimization::optimize()
     for (int j = 0; j < GPSEdgesListList[i].size(); j++)
       (GPSEdgesListList[i]).at(j)->setLevel(optLevel);
 
-  // Optimize biases again? - only if the are setFixed(true)
-  // for (int i = biasList.size() - 1; i > (biasList.size() - 1 - numBiases * windowSize) && i >= 0; i--)
-  //   biasList.at(i)->setFixed(false);
-
-  // Set pose vertices in window for optimization - not necessary if vertices are not setFixed(true)
-  // for (int i = optimizationResults.size() - 1; i > (optimizationResults.size() - 1 - windowSize) && i >= 0; i--)
-  //   optimizer.vertex(optimizationResults[i].getRoverVertexId())->setFixed(false);
-
-  // Setting vertex out of window as fixed - not necessary
-  // int fixedV = optimizationResults.size() - windowSize;
-  // if (fixedV < 0)
-  //   fixedV = 0;
-  // // if (optimizationResults.size() != 0)
-  // //   optimizer.vertex(optimizationResults[fixedV].getRoverVertexId())->setFixed(true);
-
-  // std::cout << "LaserEdges used - from last to " << i <<   "  Fixed vertex : " << fixedV << std::endl;
   optimizer.initializeOptimization(optLevel++);
   optimizer.optimize(paramMaxIterations);
 
@@ -218,9 +197,8 @@ void MyOptimization::optimize()
 void MyOptimization::saveG2OFile()
 {
   std::ofstream fout;
-  fout.open(ros::package::getPath("raw_gnss_rtklib") + "/evaluation/g2o_output/optim.g2o");
+  fout.open(ros::package::getPath("gals") + "/evaluation/g2o_output/optim.g2o");
 
-  // Wrong
   for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
   {
     g2o::VertexPointXYZ *v = static_cast<g2o::VertexPointXYZ *>(it->second);
@@ -231,7 +209,6 @@ void MyOptimization::saveG2OFile()
     if (v->fixed())
       fout << "FIX " << v->id() << std::endl;
   }
-  // Wrong
   for (auto it = optimizer.edges().begin(); it != optimizer.edges().end(); ++it)
   {
     g2o::GPSEdgePrior *e = dynamic_cast<g2o::GPSEdgePrior *>(*it);
@@ -304,7 +281,7 @@ void MyOptimization::optimizeAll()
 
   optimizer.optimize(paramMaxIterationsEnd);
   std::cout << "Ended whole optimization" << std::endl;
-  // for (int j=0, i = firstPoseWithLaserEdgeId +1; i < optimizationResults.size(); i++,j++)
+
   for (int i = 0; i < optimizationResults.size(); i++)
   {
     g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(optimizationResults[i].getRoverVertexId()));
@@ -321,9 +298,6 @@ void MyOptimization::optimizeAll()
 
 void MyOptimization::processOutput(int week, double tow)
 {
-  // for (auto it = optimizer.vertices().begin(); it != optimizer.vertices().end(); ++it)
-  //    g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(it->second);
-
   // Estimated pose
   g2o::VertexSE3 *v = static_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases));
   Eigen::Matrix4d estPose = v->estimate().matrix();
@@ -339,23 +313,19 @@ void MyOptimization::processOutput(int week, double tow)
   OptimizationResults optimResult = OptimizationResults(lastVertexId - numBiases, estPose, lastBiasesValue, week, tow);
   optimizationResults.push_back(optimResult);
   // Save results to file
-  // Skip first pose, as it has no proper estimate etc
-  // if(firstPoseWithLaserEdgeId != -1)
-    saveOutputToFile("g2o_sol.txt", estPose, week, tow);
-    saveBiasesToFile("g2o_biases.txt", lastBiasesValue, week, tow);
+  saveOutputToFile("g2o_sol.txt", estPose, week, tow);
+  saveBiasesToFile("g2o_biases.txt", lastBiasesValue, week, tow);
 }
 
 void MyOptimization::saveOutputToFile(std::string filename, Eigen::Matrix4d pose, int week, double tow)
 {
   std::ofstream fileOut;
   static bool initalizeFile = true;
-  std::string folderPath = ros::package::getPath("raw_gnss_rtklib") + "/evaluation/g2o_output/";
+  std::string folderPath = ros::package::getPath("gals") + "/evaluation/g2o_output/";
   if (initalizeFile)
   {
     remove((folderPath + "g2o_sol.txt").c_str());
     remove((folderPath + "g2o_sol_all.txt").c_str());
-    // fileOut.open(filename);
-    // fileOut.close();
     initalizeFile = false;
   }
   fileOut.open(folderPath + filename, std::ios_base::app);
@@ -369,7 +339,7 @@ void MyOptimization::saveBiasesToFile(std::string filename, std::array<double,NU
 {
   std::ofstream fileOut;
   static bool initalizeFile = true;
-  std::string folderPath = ros::package::getPath("raw_gnss_rtklib") + "/evaluation/g2o_output/";
+  std::string folderPath = ros::package::getPath("gals") + "/evaluation/g2o_output/";
   if (initalizeFile)
   {
     remove((folderPath + "g2o_biases.txt").c_str());
@@ -427,14 +397,12 @@ void MyOptimization::addDopplerEdge(int week, double tow)
 
   if (actDopplVel[0] == 0 && actDopplVel[1] == 0 && actDopplVel[2] == 0){
    std::cout << "Actual vel 0" << std::endl;
-  //  exit(0);
     return;
   }
 
   if (prevGPSPos.getVelocity()[0] == 0 && prevGPSPos.getVelocity()[1] == 0 && prevGPSPos.getVelocity()[2] == 0)
   {
     std::cout << "Prev vel 0" << std::endl;
-    // exit(0);
     return;
   }
   g2o::DopplerEdge *dopplerEdge = new g2o::DopplerEdge();
@@ -444,12 +412,8 @@ void MyOptimization::addDopplerEdge(int week, double tow)
   dopplerEdge->setVertex(1, dynamic_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases)));
 
   g2o::VertexSE3 *ve3 = dynamic_cast<g2o::VertexSE3 *> (optimizer.vertex(lastVertexId - numBiases));
-  //std::cout << ve3->estimate().matrix() <<  std::endl << prevGPSPos.getEstimatedRoverPose() << std::endl;
- 
 
   // Add measurement
- 
-  // std::cout << "Doppler Edge " << actDopplVel[0] << "  "  << actDopplVel[1] << "  "  << actDopplVel[2] << "  Prev vel  " << prevGPSPos.getVelocity()[0] << "  " << prevGPSPos.getVelocity()[1] << "  "  << prevGPSPos.getVelocity()[2] << std::endl;
   std::array<double,3> velMeasurement; velMeasurement[0] = (actDopplVel[0] + prevGPSPos.getVelocity()[0]) / 2.0; velMeasurement[1] = (actDopplVel[1] + prevGPSPos.getVelocity()[1]) / 2.0 ; velMeasurement[2] = (actDopplVel[2] + prevGPSPos.getVelocity()[2]) / 2.0;
   std::array<double,3> dstMeasurement = velMeasurement; dstMeasurement[0] *= timeDiff; dstMeasurement[1] *= timeDiff; dstMeasurement[2] *= timeDiff;
   std::cout << "Doppler dst: " << dstMeasurement[0]/1e2 << "  "  << dstMeasurement[1]/1e2 << "  "  << dstMeasurement[2]/1e2 << "  "  << std::endl;
@@ -458,7 +422,6 @@ void MyOptimization::addDopplerEdge(int week, double tow)
   // // Add information matrix
   std::array<double,3> information;
   information[0] = paramDopplerInformFactor / ( 100.0 * actDopplCov[0] * timeDiff);  information[1] = paramDopplerInformFactor / ( 100.0 * actDopplCov[1] * timeDiff);  information[2] = paramDopplerInformFactor / (100 * actDopplCov[2] * timeDiff);
-  // std::cout << "Information Doppler:  " << information[0] << "  " << information[1] << "  " << information[2] << "  " << std::endl;
   dopplerEdge->setInformation(information);
   dopplerEdge->setLevel(optLevel);
   // // Add edge to optimization
@@ -467,19 +430,11 @@ void MyOptimization::addDopplerEdge(int week, double tow)
 
   g2o::Isometry3 estimate = g2o::Isometry3::Identity();
   estimate = prevGPSPos.getEstimatedRoverPose();
-    // std::cout << estimate.matrix() << std::endl;
-
   estimate(0,3) += dstMeasurement[0]/1e2; estimate(1,3) += dstMeasurement[1]/1e2; estimate(2,3) += dstMeasurement[2]/1e2;
-  // std::cout << estimate.matrix() << std::endl;
-  // ve3->setEstimate(estimate); // Laser also sets estimate
 }
 
 void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
 {
-
-  // Check if there is missing GPS vertex:
-  // if (optimizationResults.back())
-
   // Actual GPS Time of Week
   double gpsTow = tow;
   // First Laser position
@@ -545,9 +500,6 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   Eigen::Affine3d actLaserPose =  laserPoses[matchedLaserPose].getPose();
 
   // Calculate pose increment
-  // ToDo: what coordinate frame?
-  // ToDo: estimate direction vector based on GPS speed
-
   // Calculate vector of laser translation to allign it with velocity
   Eigen::Vector3d laserVect = (prevLaserPose.inverse() * prevPlus1LaserPose).translation();
   std::array<double,3> vel = prevGPSPos.getVelocity();
@@ -567,19 +519,15 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
           v[2], 0, -v[0],
           -v[1], v[0], 0;
   Eigen::Matrix3d rot = Eigen::Matrix3d::Identity() + mat + (mat * mat * h);
-  // Eigen::Vector3d alignedLaser = rot * laserVect;
 
   // Align first part of transform - if matchedLaserPose - lastLaserIdx == 1 then it's all
   Eigen::Affine3d deltaGlobal = rot *prevLaserPose.inverse() * prevPlus1LaserPose;
   // However If (matchedLaserPose - lastLaserIdx > 1) then add delta:
   if (matchedLaserPose - lastLaserIdx > 1){
-    // deltaGlobal = deltaGlobal * prevPlus1LaserPose.inverse() * actLaserPose;
     std::cout << "Diff:  "  << matchedLaserPose - lastLaserIdx << "   Transform:   "   << (prevLaserPose.inverse() * actLaserPose).translation().transpose() << std::endl;
   }
   double posesDiff = matchedLaserPose - lastLaserIdx;
   lastLaserIdx = matchedLaserPose;
-
-  // Eigen::Affine3d delta = prevLaserPose.inverse() * actLaserPose;
 
   // Set previous vertex as fixed, so its not optimized
   // optimizer.vertex(prevGPSPos.getRoverVertexId())->setFixed(true);
@@ -588,17 +536,8 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   g2o::EdgeSE3 *edgeLaser = new g2o::EdgeSE3();
 
   g2o::Isometry3 estimate = g2o::Isometry3::Identity();
-  // Remove rotation
-  // delta.matrix().block<3,3>(0,0) = Eigen::Matrix3d::Identity();
-  // Eigen::Matrix4d tmp = delta.matrix() * prevGPSPos.getEstimatedRoverPose();
   Eigen::Affine3d deltaLocal = prevLaserPose.inverse() * actLaserPose;
-  // estimate.matrix() = prevGPSPos.getEstimatedRoverPose();
-  // estimate.translate(deltaGlobal.translation());
-  // estimate.matrix().block<3,3>(0,0) = Eigen::Matrix3d::Identity();
-  // estimate.rotate(deltaLocal.linear());
-  // estimate.translation() = estimate.translation()*2.5;
   g2o::VertexSE3 *ve3 = dynamic_cast<g2o::VertexSE3 *> (optimizer.vertex(lastVertexId - numBiases));
-  //std::cout << ve3->estimate().matrix() <<  std::endl << prevGPSPos.getEstimatedRoverPose() << std::endl;
   estimate = prevGPSPos.getEstimatedRoverPose() * deltaLocal.matrix();
   ve3->setEstimate(estimate);
 
@@ -607,7 +546,7 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
 
   // Add measurement
   g2o::Isometry3 measurement = g2o::Isometry3::Identity();
-  measurement = deltaLocal.matrix(); //prevGPSPos.getEstimatedRoverPose().inverse() * estimate.matrix();//delta.matrix();
+  measurement = deltaLocal.matrix(); 
   edgeLaser->setMeasurement(measurement);
 
   // Add information matrix
@@ -617,55 +556,6 @@ void MyOptimization::addLaserEdge(int week, double tow, Eigen::Vector3d libPose)
   // Add edge to optimization
   optimizer.addEdge(edgeLaser);
   laserEdgesList.push_back(edgeLaser);
-  // std::cout << "Translation:  "  << measurement.translation().norm() << std::endl;
-
-  // // Add DistanceEdge between GPS poses
-  // g2o::DistanceEdge *edgeDistance = new g2o::DistanceEdge;
-
-  // edgeDistance->setVertex(0, dynamic_cast<g2o::VertexSE3 *>(optimizer.vertex(prevGPSPos.getRoverVertexId())));
-  // edgeDistance->setVertex(1, dynamic_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases)));
-
-  // // Add measurement
-  // double distance = deltaLocal.translation().norm();
-  // edgeDistance->setMeasurement(distance);
-  // // Add information matrix
-  // double  information2 = 1.0;
-  // edgeDistance->setInformation(information2);
-  // edgeDistance->setLevel(optLevel);
-  // Add edge to optimization
-  //optimizer.addEdge(edgeDistance);
-
-
-  // Edge from actual Position estimated by library
-  // g2o::EdgeSE3XYZPrior *edgeXYZPrior = new g2o::EdgeSE3XYZPrior();
-  // edgeXYZPrior->setVertex(0, static_cast<g2o::VertexSE3 *>(optimizer.vertex(lastVertexId - numBiases)));
-  // // edgeXYZPrior->setVertex(0,ve3);
-  // edgeXYZPrior->setMeasurement(libPose);
-  // g2o::MatrixN<3> informationXYZ = 10.0 * g2o::MatrixN<3>::Identity();
-  // edgeXYZPrior->setInformation(informationXYZ);
-  // edgeXYZPrior->setLevel(optLevel);
-
-  // g2o::ParameterSE3Offset *poseOffset = new g2o::ParameterSE3Offset;
-  // static int id = 0;
-  // poseOffset->setId(id);
-  // optimizer.addParameter(poseOffset);
-
-  // edgeXYZPrior->setParameterId(0,id++);
-  // optimizer.addEdge(edgeXYZPrior);
-
-  // Check if laser and GPS estimate matches:
-  // Right now use libPose for this
-  // if (((estimate.translation() - libPose).norm() > 100000 * 1e-2) && laserEdgesList.size() > 5)
-  // {
-  //   // Remove GPS edges
-  //   std::cout << "Removing GPS edges" << std::endl;
-  //   int idx = lastVertexId / (numBiases + 1);
-  //   for (int i =0; i < GPSEdgesListList[idx].size(); i++)
-  //       optimizer.removeEdge(GPSEdgesListList.at(idx).at(i));
-
-  //   // Clear vector
-  //   GPSEdgesListList.at(idx).clear();
-  // }
 }
 
 void MyOptimization::filterGPS(Eigen::Vector3d libPose, double tow, int &stat)
@@ -745,11 +635,10 @@ void MyOptimization::filterGPSVel(Eigen::Vector3d libPose, double tow, int &stat
   std::array<double,3> velAvg; velAvg[0] = (actDopplVel[0] + prevGPSPos.getVelocity()[0]) / 2.0; velAvg[1] = (actDopplVel[1] + prevGPSPos.getVelocity()[1]) / 2.0 ; velAvg[2] = (actDopplVel[2] + prevGPSPos.getVelocity()[2]) / 2.0;
   double velAvgNorm = sqrt(velAvg[0] * velAvg[0] + velAvg[1] * velAvg[1] + velAvg[2] * velAvg[2]);
   double poseVel = dstDiff * 1e2 / (tow - prevTow);
-  // std::cout << "Pose velocity: "  << poseVel << "  Doppl. velocity: "  << velAvgNorm  << std::endl;
 
   if ((poseVel / velAvgNorm) > (velToDopplerRatio / 10.0) || (poseVel / velAvgNorm) < (1 / velToDopplerRatio / 10.0))
   {
-    std::cout << "Rejecting based on Doppler velocityddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" << std::endl;
+    std::cout << "Rejecting based on Doppler velocity" << std::endl;
     stat = 0;
   }
 
@@ -769,11 +658,7 @@ void MyOptimization::addVelToLastOptimResult(std::array <double,3> vel, std::arr
   {
     OptimizationResults &last = optimizationResults.back();
     //Should be exactly the same
-    // if (abs(last.getTow() - tow) < 0.05)
-    {
-      last.setVelocity(actDopplVel);
-      // std::cout << "Last vel: " <<  last.getVelocity()[0] << std::endl;
-    }
+    last.setVelocity(actDopplVel);
   }
 
   // Set actual velocity
@@ -784,11 +669,4 @@ void MyOptimization::addVelToLastOptimResult(std::array <double,3> vel, std::arr
 
 void addLaserVertex()
 {
-    // g2o::VertexSE3 *vertex = new g2o::VertexSE3;
-    // g2o::Isometry3 estIso = g2o::Isometry3::Identity();
-    // estIso.translation() = est;
-    // vertex->setEstimate(estIso);
-    // vertex->setId(++lastVertexId);
-    // vertex->setFixed(false);
-    // optimizer.addVertex(vertex);
 }

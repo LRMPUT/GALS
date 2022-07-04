@@ -18,5 +18,6 @@ extern int paramDecimation;
 extern int paramPosesToProcess;
 extern int paramDopplerInformFactor;
 extern int paramVelToDopplerRatiox10;
+extern std::string paramSlamOdometryPath;
 
 #endif

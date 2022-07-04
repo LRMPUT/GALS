@@ -12,12 +12,7 @@ namespace g2o
 
   BiasDriftEdge::BiasDriftEdge() : BaseMultiEdge<1, Eigen::Matrix<double,1,1>>() //sateliite position + pseudorange
   {
-  // resizeParameters(1);
     resize(3); // Resized number of vertexes
-    // _information.resize(2, 2);
-		// _error.resize(3, 1);
-		// _measurement.resize(2, 1);
-		// _dimension = 3;
   }
 
   void BiasDriftEdge::computeError()
