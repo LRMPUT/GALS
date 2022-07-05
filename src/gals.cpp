@@ -1,15 +1,3 @@
-/*******************************************************
- * Copyright (C) 2019, Intelligent Positioning and Navigation Lab, Hong Kong Polytechnic University
- * 
- * This file is part of GraphGNSSLib.
- * Licensed under the GNU General Public License v3.0;
- * you may not use this file except in compliance with the License.
- *
- * Author: Weisong Wen (weisong.wen@connect.polyu.hk)
- * Function: decode the RINEX file, output GNSS raw measurements via ros topics
- * Date: 2020/11/27
- *******************************************************/
-
 #include <stdarg.h>
 #include <ros/ros.h>
 #include <stdio.h>
@@ -18,9 +6,6 @@
 #include "myParameters.h"
 
 #define TRACE
-// extern void postposRegisterPub(ros::NodeHandle &n);
-// extern void rtkposRegisterPub(ros::NodeHandle &n);
-// extern void pntposRegisterPub(ros::NodeHandle &n);
 
 bool paramVerbose;
 int paramWindowSize;
@@ -141,8 +126,6 @@ int main(int argc, char **argv)
 	strcpy(infile[n++],strdup(navigationFile4.c_str()));
 	strcpy(infile[n++],strdup(navigationFile5.c_str()));
 
-	/* if you use the RTK mode, specify the position of the station (only used by RTKLIB)
-	 * following is an example position of the base HKSC in Hong Kong */
 	prcopt.refpos = 3;
 
 	/* set output files */
