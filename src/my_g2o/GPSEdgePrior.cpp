@@ -1,6 +1,3 @@
-// #include <pose_graph_mapping/custom_types/gps_edge.h>
-// #include <pose_graph_mapping/custom_types/robot_gps.h>
-// #include "include/GPSEdge.h"
 #include <iostream>
 #include "GPSEdgePrior.h"
 #include "BiasVertex.h"
