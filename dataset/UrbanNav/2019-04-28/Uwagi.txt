@@ -1,3 +1,0 @@
-chyba to samo co gps_solution_TST
-GT tylko w niewielkiej częśći pokrywa się z trajektorią odbiornika
-
